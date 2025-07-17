@@ -1,0 +1,19 @@
+{
+    "editor.formatOnSave": true,
+    "[typescriptreact]": {
+        "editor.indentSize": "tabSize",
+        "editor.tabSize": 2
+    },
+    "[typescript]": {
+        "editor.indentSize": "tabSize",
+        "editor.tabSize": 2
+    },
+    "[css]": {
+        "editor.indentSize": "tabSize",
+        "editor.tabSize": 2
+    },
+    "[json]": {
+        "editor.indentSize": "tabSize",
+        "editor.tabSize": 2
+    }
+}
