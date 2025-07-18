@@ -1,23 +1,27 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import * as cookieParser from 'cookie-parser';
+import { ValidationPipe } from '@nestjs/common';
 import { setupSwagger } from './config/swagger.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  const config = new DocumentBuilder()
-    .setTitle('Minha API')
-    .setDescription('Documentação Swagger da API')
-    .setVersion('1.0')
-    .build();
+  app.use(cookieParser());
+  app.enableCors();
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
   setupSwagger(app);
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
-
   await app.listen(3000);
+  console.log(`🚀 Server rodando em http://localhost:3000`);
+  console.log(`📚 Docs disponíveis em http://localhost:3000/api/docs`);
 }
 
 bootstrap();
