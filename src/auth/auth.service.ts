@@ -1,26 +1,42 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { UsersService } from '../users/users.service';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
-  create(createAuthDto: CreateAuthDto) {
-    return 'This action adds a new auth';
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+  ) {}
+
+  async validateUser(email: string, password: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user || !user.password) {
+      throw new UnauthorizedException('Credenciais inválidas ou conta cadastrada via Google.');
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      throw new UnauthorizedException('Credenciais inválidas');
+    }
+
+    return user;
   }
 
-  findAll() {
-    return `This action returns all auth`;
+  async login(email: string, password: string) {
+    if (!email || !password) {
+      throw new UnauthorizedException('E-mail e senha são obrigatórios');
+    }
+
+    const user = await this.validateUser(email, password);
+    const payload = { sub: user.id, email: user.email };
+    const token = this.jwtService.sign(payload);
+
+    return { token, user };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
-
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+  getJwtService() {
+    return this.jwtService;
   }
 }
