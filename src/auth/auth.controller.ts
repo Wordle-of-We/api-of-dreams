@@ -2,7 +2,7 @@ import { Controller, Post, Body, Res, UnauthorizedException, UseGuards } from '@
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { Response } from 'express';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
 
 @ApiTags('Autenticação')
@@ -32,13 +32,16 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
-  async logout(@Res({ passthrough: true }) res: Response) {
+  @ApiBearerAuth()
+  async logout(
+    @Res({ passthrough: true }) res: Response
+  ) {
     res.clearCookie('authToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       path: '/',
     });
-    return { success: true };
+    return { message: 'Logout efetuado com sucesso' };
   }
 }
