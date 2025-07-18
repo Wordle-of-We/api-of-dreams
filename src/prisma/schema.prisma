@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum Race {
+  ANIMAL
+  HUMAN
+  OTHER
+}
+
+enum Ethnicity {
+  AFRICAN
+  ASIAN
+  EUROPEAN
+  LATIN
+  OTHER
+}
+
+enum Hair {
+  BLACK
+  BROWN
+  BLOND
+  RED
+  OTHER
+}
+
+enum AliveStatus {
+  ALIVE
+  DEAD
+}
+
+enum GameMode {
+  CHARACTERISTICS
+  DESCRIPTION
+  IMAGE
+  EMOJI
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  plays      Play[]
+  attempts   Attempt[]
+  accessLogs AccessLog[]
+}
+
+model Franchise {
+  id         Int                  @id @default(autoincrement())
+  name       String               @unique
+  characters CharacterFranchise[]
+}
+
+model Character {
+  id            Int         @id @default(autoincrement())
+  name          String      @unique
+  description   String?
+  emoji         String?
+  gender        Gender
+  race          Race
+  ethnicity     Ethnicity
+  hair          Hair
+  aliveStatus   AliveStatus
+  isProtagonist Boolean     @default(false)
+  isAntagonist  Boolean     @default(false)
+  imageUrl1     String?
+  imageUrl2     String?
+
+  franchises      CharacterFranchise[]
+  plays           Play[]
+  attempts        Attempt[]
+  dailySelections DailySelection[]
+}
+
+model CharacterFranchise {
+  character   Character @relation(fields: [characterId], references: [id])
+  characterId Int
+  franchise   Franchise @relation(fields: [franchiseId], references: [id])
+  franchiseId Int
+
+  @@id([characterId, franchiseId])
+}
+
+model Play {
+  id            Int       @id @default(autoincrement())
+  user          User      @relation(fields: [userId], references: [id])
+  userId        Int
+  mode          GameMode
+  character     Character @relation(fields: [characterId], references: [id])
+  characterId   Int
+  attemptsCount Int       @default(0)
+  createdAt     DateTime  @default(now())
+}
+
+model Attempt {
+  id          Int       @id @default(autoincrement())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int
+  character   Character @relation(fields: [characterId], references: [id])
+  characterId Int
+  mode        GameMode
+  guess       String
+  isCorrect   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+}
+
+model DailySelection {
+  id          Int       @id @default(autoincrement())
+  date        DateTime
+  mode        GameMode
+  character   Character @relation(fields: [characterId], references: [id])
+  characterId Int
+
+  @@unique([date, mode])
+}
+
+model AccessLog {
+  id        Int       @id @default(autoincrement())
+  user      User?     @relation(fields: [userId], references: [id])
+  userId    Int?
+  endpoint  String
+  mode      GameMode?
+  createdAt DateTime  @default(now())
+}
