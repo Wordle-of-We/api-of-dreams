@@ -1,34 +1,48 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { FranchisesService } from './franchises.service';
 import { CreateFranchiseDto } from './dto/create-franchise.dto';
 import { UpdateFranchiseDto } from './dto/update-franchise.dto';
+import { Roles } from '../common/decorators/roles.decorator';
+import { Role } from '@prisma/client';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 
+@ApiTags('franchises')
 @Controller('franchises')
 export class FranchisesController {
-  constructor(private readonly franchisesService: FranchisesService) {}
+  constructor(private readonly service: FranchisesService) { }
 
   @Post()
-  create(@Body() createFranchiseDto: CreateFranchiseDto) {
-    return this.franchisesService.create(createFranchiseDto);
+  @UseGuards(JwtAuthGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  create(@Body() dto: CreateFranchiseDto) {
+    return this.service.create(dto);
   }
 
   @Get()
   findAll() {
-    return this.franchisesService.findAll();
+    return this.service.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.franchisesService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.service.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateFranchiseDto: UpdateFranchiseDto) {
-    return this.franchisesService.update(+id, updateFranchiseDto);
+  @UseGuards(JwtAuthGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateFranchiseDto) {
+    return this.service.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.franchisesService.remove(+id);
+  @UseGuards(JwtAuthGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.service.remove(id);
   }
 }

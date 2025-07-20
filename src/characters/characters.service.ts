@@ -5,20 +5,30 @@ import { UpdateCharacterDto } from './dto/update-character.dto';
 
 @Injectable()
 export class CharactersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async create(dto: CreateCharacterDto) {
-    const { franchiseIds = [], imageUrls = [], ...data } = dto;
     return this.prisma.character.create({
       data: {
-        ...data,
-        imageUrl1: imageUrls[0] || null,
-        imageUrl2: imageUrls[1] || null,
-        franchises: {
-          create: franchiseIds.map(franchiseId => ({
-            franchise: { connect: { id: franchiseId } },
-          })),
-        },
+        name: dto.name,
+        description: dto.description,
+        emojis: dto.emojis ?? [],
+        gender: dto.gender,
+        race: dto.race ?? [],
+        ethnicity: dto.ethnicity ?? [],
+        hair: dto.hair,
+        aliveStatus: dto.aliveStatus,
+        isProtagonist: dto.isProtagonist,
+        isAntagonist: dto.isAntagonist,
+        imageUrl1: dto.imageUrl1,
+        imageUrl2: dto.imageUrl2,
+        franchises: dto.franchiseIds
+          ? {
+            create: dto.franchiseIds.map(id => ({
+              franchise: { connect: { id } },
+            })),
+          }
+          : undefined,
       },
       include: { franchises: { include: { franchise: true } } },
     });
@@ -27,7 +37,6 @@ export class CharactersService {
   async findAll() {
     return this.prisma.character.findMany({
       include: { franchises: { include: { franchise: true } } },
-      orderBy: { name: 'asc' },
     });
   }
 
@@ -37,41 +46,40 @@ export class CharactersService {
       include: { franchises: { include: { franchise: true } } },
     });
     if (!character) {
-      throw new NotFoundException(`Character #${id} not found`);
+      throw new NotFoundException(`Character ${id} not found`);
     }
     return character;
   }
 
   async update(id: number, dto: UpdateCharacterDto) {
     await this.findOne(id);
-    const { franchiseIds, imageUrls, ...data } = dto;
-    const updateData: any = { ...data };
-
-    if (imageUrls) {
-      updateData.imageUrl1 = imageUrls[0] || null;
-      updateData.imageUrl2 = imageUrls[1] || null;
-    }
-
-    // Atualiza relacionamentos de franquias
-    if (franchiseIds) {
-      updateData.franchises = {
-        deleteMany: {},
-        create: franchiseIds.map(franchiseId => ({
-          franchise: { connect: { id: franchiseId } },
-        })),
-      };
-    }
-
     return this.prisma.character.update({
       where: { id },
-      data: updateData,
+      data: {
+        ...dto,
+        emojis: dto.emojis,
+        race: dto.race,
+        ethnicity: dto.ethnicity,
+        hair: dto.hair,
+        franchises: dto.franchiseIds
+          ? {
+            deleteMany: {},
+            create: dto.franchiseIds.map(franchiseId => ({
+              franchise: { connect: { id: franchiseId } },
+            })),
+          }
+          : undefined,
+      },
       include: { franchises: { include: { franchise: true } } },
     });
   }
 
   async remove(id: number) {
     await this.findOne(id);
-    await this.prisma.character.delete({ where: { id } });
-    return { deleted: true };
+    await this.prisma.characterFranchise.deleteMany({ where: { characterId: id } });
+    await this.prisma.play.deleteMany({ where: { characterId: id } });
+    await this.prisma.attempt.deleteMany({ where: { characterId: id } });
+    await this.prisma.dailySelection.deleteMany({ where: { characterId: id } });
+    return this.prisma.character.delete({ where: { id } });
   }
 }
