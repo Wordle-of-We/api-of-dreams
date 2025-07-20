@@ -18,28 +18,6 @@ enum Gender {
   OTHER
 }
 
-enum Race {
-  ANIMAL
-  HUMAN
-  OTHER
-}
-
-enum Ethnicity {
-  AFRICAN
-  ASIAN
-  EUROPEAN
-  LATIN
-  OTHER
-}
-
-enum Hair {
-  BLACK
-  BROWN
-  BLOND
-  RED
-  OTHER
-}
-
 enum AliveStatus {
   ALIVE
   DEAD
@@ -75,11 +53,11 @@ model Character {
   id            Int         @id @default(autoincrement())
   name          String      @unique
   description   String?
-  emoji         String?
+  emojis        String[]    @default([])
   gender        Gender
-  race          Race
-  ethnicity     Ethnicity
-  hair          Hair
+  race          String[]    @default([])
+  ethnicity     String[]    @default([])
+  hair          String
   aliveStatus   AliveStatus
   isProtagonist Boolean     @default(false)
   isAntagonist  Boolean     @default(false)
