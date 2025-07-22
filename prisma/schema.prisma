@@ -46,6 +46,8 @@ model User {
 model Franchise {
   id         Int                  @id @default(autoincrement())
   name       String               @unique
+  createdAt DateTime @default(now())
+  imageUrl   String?
   characters CharacterFranchise[]
 }
 
