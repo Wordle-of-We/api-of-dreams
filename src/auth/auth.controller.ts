@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Res, UnauthorizedException, UseGuards, Req, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { Response } from 'express';
@@ -28,6 +28,13 @@ export class AuthController {
     });
 
     return res.json({ message: 'Login realizado com sucesso!', user });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  @ApiBearerAuth()
+  getProfile(@Req() req) {
+    return req.user;
   }
 
   @UseGuards(JwtAuthGuard)
