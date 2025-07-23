@@ -10,7 +10,10 @@ async function bootstrap() {
   app.use(cookieParser());
 
   app.enableCors({
-    origin: ['http://localhost:3001'],
+    origin: [
+      'http://localhost:3001',
+      'https://panel-dreamdle.vercel.app/'
+    ],
     credentials: true,
   });
 
@@ -24,9 +27,10 @@ async function bootstrap() {
 
   setupSwagger(app);
 
-  await app.listen(3000);
-  console.log(`🚀 Server rodando em http://localhost:3000`);
-  console.log(`📚 Docs disponíveis em http://localhost:3000/api/docs`);
+  const port = parseInt(process.env.PORT ?? '3000', 10);
+  await app.listen(port);
+  console.log(`🚀 Server rodando em http://localhost:${port}`);
+  console.log(`📚 Docs disponíveis em http://localhost:${port}/api/docs`);
 }
 
 bootstrap();
