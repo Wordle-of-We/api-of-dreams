@@ -24,7 +24,8 @@ export class AuthController {
       httpOnly: true,
       // secure: process.env.NODE_ENV === 'production',
       secure: false,
-      sameSite: 'strict',
+      sameSite: 'none',
+      maxAge: 1000 * 60 * 60 * 24 * 7,
     });
 
     return res.json({ message: 'Login realizado com sucesso!', user });
@@ -48,7 +49,6 @@ export class AuthController {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'none',
       path: '/',
-      maxAge: 1000 * 60 * 60 * 24 * 7,
     });
     return { message: 'Logout efetuado com sucesso' };
   }
