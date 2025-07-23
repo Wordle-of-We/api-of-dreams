@@ -12,7 +12,7 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'http://localhost:3001',
-      'https://panel-dreamdle.vercel.app/'
+      'https://panel-dreamdle.vercel.app'
     ],
     credentials: true,
   });
