@@ -46,8 +46,9 @@ export class AuthController {
     res.clearCookie('authToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'none',
       path: '/',
+      maxAge: 1000 * 60 * 60 * 24 * 7,
     });
     return { message: 'Logout efetuado com sucesso' };
   }
