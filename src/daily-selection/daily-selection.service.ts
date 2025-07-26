@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
-import { GameMode } from '@prisma/client';
 
 @Injectable()
 export class DailySelectionService {
@@ -9,7 +8,7 @@ export class DailySelectionService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  @Cron('0 0 * * *', { timeZone: 'America/Fortaleza' })
+  @Cron('17 21 * * *', { timeZone: 'America/Fortaleza' })
   async triggerGenerateRoute() {
     await this.handleDailyDraw();
   }
@@ -21,34 +20,34 @@ export class DailySelectionService {
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const activeModes = await this.prisma.modeConfig.findMany({
+    const modeConfigs = await this.prisma.modeConfig.findMany({
       where: { isActive: true },
-      select: { mode: true },
     });
-    const modes = activeModes.map((m) => m.mode as GameMode);
 
     const usedToday = new Set<number>();
 
-    for (const mode of modes) {
+    for (const modeConfig of modeConfigs) {
       const exists = await this.prisma.dailySelection.findUnique({
-        where: { date_mode: { date: today, mode } },
+        where: {
+          date_modeConfigId: {
+            date: today,
+            modeConfigId: modeConfig.id,
+          },
+        },
       });
       if (exists) {
-        this.logger.log(`Já existe seleção para ${mode} em ${today.toDateString()}`);
         usedToday.add(exists.characterId);
         continue;
       }
 
       const where = {
         AND: [
-          {
-            id: { notIn: Array.from(usedToday) },
-          },
+          { id: { notIn: Array.from(usedToday) } },
           {
             NOT: {
               dailySelections: {
                 some: {
-                  mode,
+                  modeConfigId: modeConfig.id,
                   date: { gte: thirtyDaysAgo },
                 },
               },
@@ -59,9 +58,7 @@ export class DailySelectionService {
 
       const total = await this.prisma.character.count({ where });
       if (total === 0) {
-        this.logger.warn(
-          `Sem candidatos disponíveis para modo ${mode} (já rolou tudo nos últimos 30 dias ou usado hoje)`,
-        );
+        this.logger.warn(`Sem candidatos para modo ${modeConfig.name}`);
         continue;
       }
 
@@ -75,23 +72,25 @@ export class DailySelectionService {
       await this.prisma.dailySelection.create({
         data: {
           date: today,
-          mode,
-          character: { connect: { id: character.id } },
+          modeConfig: { connect: { id: modeConfig.id } },
+          character:  { connect: { id: character.id } },
         },
       });
 
-      this.logger.log(`Sorteado para ${mode}: ${character.name}`);
-
       usedToday.add(character.id);
+      this.logger.log(`Sorteado ${character.name} para modo ${modeConfig.name}`);
     }
   }
 
-  async getTodaySelection(mode?: GameMode) {
+  async getTodaySelection(modeId?: number) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const where: any = { date: today };
+    if (modeId) where.modeConfigId = modeId;
+
     return this.prisma.dailySelection.findMany({
-      where: { date: today, ...(mode && { mode }) },
-      include: { character: true },
+      where,
+      include: { character: true, modeConfig: true },
     });
   }
 }

@@ -40,16 +40,15 @@ export class CharactersService {
         ethnicity: dto.ethnicity ?? [],
         hair: dto.hair,
         aliveStatus: dto.aliveStatus,
-        isProtagonist: dto.isProtagonist,
-        isAntagonist: dto.isAntagonist,
+        paper: dto.paper ?? false,
         imageUrl1,
         imageUrl2: dto.imageUrl2,
         franchises: dto.franchiseIds
           ? {
-              create: dto.franchiseIds.map((fid) => ({
-                franchise: { connect: { id: Number(fid) } },
-              })),
-            }
+            create: dto.franchiseIds.map((fid) => ({
+              franchise: { connect: { id: Number(fid) } },
+            })),
+          }
           : undefined,
       },
       include: {
@@ -58,31 +57,31 @@ export class CharactersService {
     });
   }
 
-  async findAll(): Promise<(Character & { franchiseNames: string[] })[]> {
+  async findAll() {
     const chars = await this.prisma.character.findMany({
-      include: {
-        franchises: {
-          include: { franchise: true },
-        },
-      },
+      include: { franchises: { include: { franchise: true } } },
     });
-
-    return chars.map((c) => ({
-      ...c,
-      franchiseNames: c.franchises.map((cf) => cf.franchise.name),
-    }));
+    return chars.map(c => {
+      const flat = c.franchises.map(cf => cf.franchise);
+      return {
+        ...c,
+        franchises: flat,
+        franchiseNames: flat.map(f => f.name),
+      };
+    });
   }
 
-  async findOne(id: number): Promise<Character & { franchiseNames: string[] }> {
+  async findOne(id: number) {
     const c = await this.prisma.character.findUnique({
       where: { id },
       include: { franchises: { include: { franchise: true } } },
     });
-    if (!c) throw new NotFoundException(`Character ${id} not found`);
-
+    if (!c) throw new NotFoundException();
+    const flat = c.franchises.map(cf => cf.franchise);
     return {
       ...c,
-      franchiseNames: c.franchises.map((cf) => cf.franchise.name),
+      franchises: flat,
+      franchiseNames: flat.map(f => f.name),
     };
   }
 
@@ -101,11 +100,11 @@ export class CharactersService {
         imageUrl2: dto.imageUrl2,
         franchises: franchiseIds
           ? {
-              deleteMany: {},
-              create: franchiseIds.map((fid: string) => ({
-                franchise: { connect: { id: Number(fid) } },
-              })),
-            }
+            deleteMany: {},
+            create: franchiseIds.map((fid: string) => ({
+              franchise: { connect: { id: Number(fid) } },
+            })),
+          }
           : undefined,
       },
       include: {

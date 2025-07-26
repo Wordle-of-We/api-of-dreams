@@ -4,6 +4,8 @@ import { CreateAuthDto } from './dto/create-auth.dto';
 import { Response } from 'express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @ApiTags('Autenticação')
 @Controller('auth')
@@ -32,6 +34,7 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Roles(Role.ADMIN)
   @Get('profile')
   @ApiBearerAuth()
   getProfile(@Req() req) {
@@ -39,6 +42,7 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Roles(Role.ADMIN)
   @Post('logout')
   @ApiBearerAuth()
   async logout(

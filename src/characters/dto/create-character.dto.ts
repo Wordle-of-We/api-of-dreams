@@ -1,6 +1,7 @@
 import {
   IsString, IsOptional, IsArray, ArrayNotEmpty,
-  IsEnum
+  IsEnum,
+  IsBoolean
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AliveStatus, Gender } from '@prisma/client';
@@ -33,11 +34,8 @@ export class CreateCharacterDto {
   @IsEnum(AliveStatus)
   aliveStatus: AliveStatus;
 
-  @ApiPropertyOptional({ default: false }) @IsOptional()
-  isProtagonist?: boolean;
-
-  @ApiPropertyOptional({ default: false }) @IsOptional()
-  isAntagonist?: boolean;
+  @IsOptional() @IsBoolean()   
+  paper?: boolean;
 
   @ApiPropertyOptional({ type: [Number] })
   @IsOptional() @IsArray() @ArrayNotEmpty()
