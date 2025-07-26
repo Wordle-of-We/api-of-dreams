@@ -12,9 +12,10 @@ import { AttemptsModule } from './attempts/attempts.module';
 import { AccessLogsModule } from './access-logs/access-logs.module';
 import { StatsModule } from './stats/stats.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { GameModeModule } from './game-mode/game-mode.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, UsersModule, CharactersModule, FranchisesModule, DailySelectionModule, PlaysModule, AttemptsModule, AccessLogsModule, StatsModule, ScheduleModule.forRoot(),],
+  imports: [PrismaModule, AuthModule, UsersModule, CharactersModule, FranchisesModule, DailySelectionModule, PlaysModule, AttemptsModule, AccessLogsModule, StatsModule, ScheduleModule.forRoot(), GameModeModule,],
   controllers: [AppController],
   providers: [AppService],
 })
