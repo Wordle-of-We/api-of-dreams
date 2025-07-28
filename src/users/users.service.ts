@@ -16,18 +16,15 @@ export class UsersService {
   constructor(private readonly prisma: PrismaService) { }
 
   async create(data: CreateUserDto) {
-    const exists = await this.prisma.user.findUnique({
-      where: { email: data.email },
-    });
-    if (exists) {
-      throw new BadRequestException('Já existe um usuário com este e-mail.');
-    }
+    const exists = await this.prisma.user.findUnique({ where: { email: data.email } });
+    if (exists) throw new BadRequestException('Já existe um usuário com este e-mail.');
+
     const hashed = await bcrypt.hash(data.password, SALT_ROUNDS);
     return this.prisma.user.create({
       data: {
         email: data.email,
         password: hashed,
-        role: data.role as Role,
+        role: Role.USER,
       },
     });
   }
@@ -65,10 +62,6 @@ export class UsersService {
 
     if (data.password) {
       updateData.password = await bcrypt.hash(data.password, SALT_ROUNDS);
-    }
-
-    if (data.role) {
-      updateData.role = data.role;
     }
 
     return this.prisma.user.update({

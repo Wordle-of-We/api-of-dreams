@@ -173,12 +173,26 @@ export class CharactersService {
     await this.prisma.characterFranchise.deleteMany({
       where: { characterId: id },
     });
-    await this.prisma.play.deleteMany({ where: { characterId: id } });
-    await this.prisma.attempt.deleteMany({ where: { characterId: id } });
+
+    await this.prisma.play.deleteMany({
+      where: { characterId: id },
+    });
+
+    await this.prisma.attempt.deleteMany({
+      where: {
+        OR: [
+          { targetCharacterId: id },
+          { guessedCharacterId: id },
+        ],
+      },
+    });
+
     await this.prisma.dailySelection.deleteMany({
       where: { characterId: id },
     });
 
-    return this.prisma.character.delete({ where: { id } });
+    return this.prisma.character.delete({
+      where: { id },
+    });
   }
 }

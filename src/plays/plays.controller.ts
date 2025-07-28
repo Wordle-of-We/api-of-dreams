@@ -1,34 +1,57 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { PlaysService } from './plays.service';
-import { CreatePlayDto } from './dto/create-play.dto';
-import { UpdatePlayDto } from './dto/update-play.dto';
+// src/plays/plays.controller.ts
+
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Req,
+  Param,
+  ParseIntPipe,
+  UseGuards,
+} from '@nestjs/common';
+import { PlaysService }      from './plays.service';
+import { StartPlayDto }      from './dto/start-play.dto';
+import { GuessDto }          from './dto/create-play.dto';
+import { OptionalAuthGuard } from '../auth/guard/optional-auth.guard';
+import type { Request }      from 'express';
+
+interface RequestWithUser extends Request {
+  user?: { userId: number; email?: string };
+}
 
 @Controller('plays')
 export class PlaysController {
   constructor(private readonly playsService: PlaysService) {}
 
-  @Post()
-  create(@Body() createPlayDto: CreatePlayDto) {
-    return this.playsService.create(createPlayDto);
+  @Post('start')
+  @UseGuards(OptionalAuthGuard)
+  async start(
+    @Req()  req: RequestWithUser,
+    @Body() dto: StartPlayDto,
+  ) {
+    const userId = req.user?.userId;
+    return this.playsService.startPlay(userId, dto.modeConfigId);
   }
 
-  @Get()
-  findAll() {
-    return this.playsService.findAll();
+  @Post(':playId/guess')
+  @UseGuards(OptionalAuthGuard)
+  async guess(
+    @Req()  req: RequestWithUser,
+    @Param('playId', ParseIntPipe) playId: number,
+    @Body() dto: GuessDto,
+  ) {
+    const userId = req.user?.userId;
+    return this.playsService.makeGuess(userId, playId, dto.guess);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.playsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePlayDto: UpdatePlayDto) {
-    return this.playsService.update(+id, updatePlayDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.playsService.remove(+id);
+  @Get(':playId/attempts')
+  @UseGuards(OptionalAuthGuard)
+  async listAttempts(
+    @Req()  req: RequestWithUser,
+    @Param('playId', ParseIntPipe) playId: number,
+  ) {
+    const userId = req.user?.userId;
+    return this.playsService.getAttemptsByPlay(userId, playId);
   }
 }

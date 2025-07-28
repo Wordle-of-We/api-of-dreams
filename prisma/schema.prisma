@@ -24,12 +24,12 @@ enum AliveStatus {
 }
 
 model User {
-  id         Int          @id @default(autoincrement())
-  email      String       @unique
-  password   String
-  role       Role         @default(USER)
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   plays      Play[]
   attempts   Attempt[]
@@ -37,31 +37,33 @@ model User {
 }
 
 model Franchise {
-  id         Int                    @id @default(autoincrement())
-  name       String                 @unique
-  createdAt  DateTime               @default(now())
+  id         Int                  @id @default(autoincrement())
+  name       String               @unique
+  createdAt  DateTime             @default(now())
   imageUrl   String?
   characters CharacterFranchise[]
 }
 
 model Character {
-  id          Int                    @id @default(autoincrement())
-  name        String                 @unique
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
   description String?
-  emojis      String[]               @default([])
+  emojis      String[]    @default([])
   gender      Gender
-  race        String[]               @default([])
-  ethnicity   String[]               @default([])
+  race        String[]    @default([])
+  ethnicity   String[]    @default([])
   hair        String
   aliveStatus AliveStatus
-  paper       Boolean?               @default(false)
+  paper       Boolean?    @default(false)
   imageUrl1   String?
   imageUrl2   String?
 
   franchises      CharacterFranchise[]
   plays           Play[]
-  attempts        Attempt[]
   dailySelections DailySelection[]
+
+  targetAttempts  Attempt[] @relation("target")
+  guessedAttempts Attempt[] @relation("guessed")
 }
 
 model CharacterFranchise {
@@ -74,61 +76,69 @@ model CharacterFranchise {
 }
 
 model ModeConfig {
-  id               Int                @id @default(autoincrement())
-  name             String             @unique
-  description      String
-  isActive         Boolean            @default(true)
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  plays            Play[]
-  attempts         Attempt[]
-  dailySelections  DailySelection[]
-  accessLogs       AccessLog[]
+  plays           Play[]
+  attempts        Attempt[]
+  dailySelections DailySelection[]
+  accessLogs      AccessLog[]
 }
 
 model Play {
-  id             Int          @id @default(autoincrement())
-  user           User         @relation(fields: [userId], references: [id])
-  userId         Int
-  modeConfig     ModeConfig   @relation(fields: [modeConfigId], references: [id])
-  modeConfigId   Int
-  character      Character    @relation(fields: [characterId], references: [id])
-  characterId    Int
-  attemptsCount  Int          @default(0)
-  createdAt      DateTime     @default(now())
+  id            Int      @id @default(autoincrement())
+  userId        Int?
+  guestId       String?
+  modeConfigId  Int
+  characterId   Int
+  attemptsCount Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  user       User?      @relation(fields: [userId], references: [id])
+  modeConfig ModeConfig @relation(fields: [modeConfigId], references: [id])
+  character  Character  @relation(fields: [characterId], references: [id])
+  attempts   Attempt[]
 }
 
 model Attempt {
-  id             Int          @id @default(autoincrement())
-  user           User         @relation(fields: [userId], references: [id])
-  userId         Int
-  character      Character    @relation(fields: [characterId], references: [id])
-  characterId    Int
-  modeConfig     ModeConfig   @relation(fields: [modeConfigId], references: [id])
-  modeConfigId   Int
-  guess          String
-  isCorrect      Boolean      @default(false)
-  createdAt      DateTime     @default(now())
+  id                 Int        @id @default(autoincrement())
+  userId             Int?
+  user               User?      @relation(fields: [userId], references: [id])
+  guestId            String?
+  targetCharacterId  Int
+  targetCharacter    Character  @relation("target", fields: [targetCharacterId], references: [id])
+  guessedCharacterId Int?
+  guessedCharacter   Character? @relation("guessed", fields: [guessedCharacterId], references: [id])
+  modeConfigId       Int
+  modeConfig         ModeConfig @relation(fields: [modeConfigId], references: [id])
+  guess              String
+  isCorrect          Boolean    @default(false)
+  createdAt          DateTime   @default(now())
+  Play               Play?      @relation(fields: [playId], references: [id])
+  playId             Int?
 }
 
 model DailySelection {
-  id             Int          @id @default(autoincrement())
-  date           DateTime
-  modeConfig     ModeConfig   @relation(fields: [modeConfigId], references: [id])
-  modeConfigId   Int
-  character      Character    @relation(fields: [characterId], references: [id])
-  characterId    Int
+  id           Int        @id @default(autoincrement())
+  date         DateTime
+  modeConfig   ModeConfig @relation(fields: [modeConfigId], references: [id])
+  modeConfigId Int
+  character    Character  @relation(fields: [characterId], references: [id])
+  characterId  Int
 
   @@unique([date, modeConfigId])
 }
 
 model AccessLog {
-  id             Int          @id @default(autoincrement())
-  user           User?        @relation(fields: [userId], references: [id])
-  userId         Int?
-  endpoint       String
-  modeConfig     ModeConfig?  @relation(fields: [modeConfigId], references: [id])
-  modeConfigId   Int?
-  createdAt      DateTime     @default(now())
+  id           Int         @id @default(autoincrement())
+  user         User?       @relation(fields: [userId], references: [id])
+  userId       Int?
+  endpoint     String
+  modeConfig   ModeConfig? @relation(fields: [modeConfigId], references: [id])
+  modeConfigId Int?
+  createdAt    DateTime    @default(now())
 }
