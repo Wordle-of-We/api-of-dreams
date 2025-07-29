@@ -17,10 +17,13 @@ export class StatsService {
     return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
   }
 
-  async getOverview(date?: string): Promise<OverviewStatsDto> {
-    const day = this.buildDayStart(date);
-    const overview = await this.prisma.dailyOverview.findUnique({
-      where: { date: day },
+  async getOverview(dateStr?: string): Promise<OverviewStatsDto> {
+    const start = this.buildDayStart(dateStr);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 1);
+
+    const overview = await this.prisma.dailyOverview.findFirst({
+      where: { date: { gte: start, lt: end } },
       include: {
         modeStats: {
           include: {
@@ -48,21 +51,22 @@ export class StatsService {
       totalInitiatedPlays: overview.totalInitiatedPlays,
       totalCompletedPlays: overview.totalCompletedPlays,
       totalUncompletedPlays: overview.totalUncompletedPlays,
-      playsByMode
+      playsByMode,
     };
   }
 
   async getModeStats(
     modeConfigId: number,
-    date?: string,
+    dateStr?: string,
   ): Promise<ModeStatsDto> {
-    const day = this.buildDayStart(date);
-    const ms = await this.prisma.modeDailyStats.findUnique({
+    const start = this.buildDayStart(dateStr);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 1);
+
+    const ms = await this.prisma.modeDailyStats.findFirst({
       where: {
-        date_modeConfigId: {
-          date: day,
-          modeConfigId,
-        }
+        modeConfigId,
+        date: { gte: start, lt: end },
       },
       include: {
         modeConfig: { select: { name: true } }
