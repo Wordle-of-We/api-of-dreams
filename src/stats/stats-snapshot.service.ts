@@ -12,10 +12,11 @@ export class StatsSnapshotService {
     return d;
   }
 
-  @Cron('* */01 * * *')
+  @Cron('0 * * * *')
   async syncDay() {
     const today = this.dayStart(new Date());
     await this.updateDailyOverview(today);
+
     const modes = await this.prisma.modeConfig.findMany({ where: { isActive: true } });
     for (const m of modes) {
       await this.updateModeStatsForDay(m.id, today);
@@ -24,40 +25,90 @@ export class StatsSnapshotService {
 
   async updateDailyOverview(date: Date) {
     const day = this.dayStart(date);
+
     const totalUsersEver = await this.prisma.user.count();
-    const totalNewUsers = await this.prisma.user.count({ where: { createdAt: { gte: day } } });
-    const plays = await this.prisma.play.findMany({ where: { createdAt: { gte: day } } });
+    const totalNewUsers = await this.prisma.user.count({
+      where: { createdAt: { gte: day } },
+    });
+
+    const plays = await this.prisma.play.findMany({
+      where: { createdAt: { gte: day } },
+    });
     const initiated = plays.length;
     const completed = plays.filter(p => p.completed).length;
     const uncompleted = initiated - completed;
 
     await this.prisma.dailyOverview.upsert({
       where: { date: day },
-      create: { date: day, totalUsersEver, totalNewUsers, totalInitiatedPlays: initiated, totalCompletedPlays: completed, totalUncompletedPlays: uncompleted },
-      update: { totalUsersEver, totalNewUsers, totalInitiatedPlays: initiated, totalCompletedPlays: completed, totalUncompletedPlays: uncompleted },
+      create: {
+        date: day,
+        totalUsersEver,
+        totalNewUsers,
+        totalInitiatedPlays: initiated,
+        totalCompletedPlays: completed,
+        totalUncompletedPlays: uncompleted,
+      },
+      update: {
+        totalUsersEver,
+        totalNewUsers,
+        totalInitiatedPlays: initiated,
+        totalCompletedPlays: completed,
+        totalUncompletedPlays: uncompleted,
+      },
     });
   }
 
   async updateModeStatsForDay(modeConfigId: number, date: Date) {
     const day = this.dayStart(date);
-    const plays = await this.prisma.play.findMany({ where: { modeConfigId, createdAt: { gte: day } } });
+
+    const plays = await this.prisma.play.findMany({
+      where: { modeConfigId, createdAt: { gte: day } },
+    });
     const i = plays.length;
     const c = plays.filter(p => p.completed).length;
     const u = i - c;
-    const avg = c > 0 ? plays.filter(p => p.completed).reduce((s, p) => s + p.attemptsCount, 0) / c : 0;
-    const uniq = (await this.prisma.play.findMany({
-      where: { modeConfigId, createdAt: { gte: day }, userId: { not: null } },
-      distinct: ['userId'],
-      select: { userId: true },
-    })).length;
+    const totalAttemptsForCompleted = plays
+      .filter(p => p.completed)
+      .reduce((sum, p) => sum + p.attemptsCount, 0);
+    const avg = c > 0 ? totalAttemptsForCompleted / c : 0;
+    const uniq = (
+      await this.prisma.play.findMany({
+        where: {
+          modeConfigId,
+          createdAt: { gte: day },
+          userId: { not: null },
+        },
+        distinct: ['userId'],
+        select: { userId: true },
+      })
+    ).length;
 
-    await this.updateDailyOverview(day);
-    const overview = await this.prisma.dailyOverview.findUnique({ where: { date: day } });
+    await this.updateDailyOverview(date);
+    const overview = await this.prisma.dailyOverview.findUnique({
+      where: { date: day },
+    });
 
     await this.prisma.modeDailyStats.upsert({
-      where: { date_modeConfigId: { date: day, modeConfigId } },
-      create: { date: day, modeConfigId, initiatedPlays: i, completedPlays: c, uncompletedPlays: u, averageAttempts: avg, uniqueUsers: uniq, overviewId: overview!.id },
-      update: { initiatedPlays: i, completedPlays: c, uncompletedPlays: u, averageAttempts: avg, uniqueUsers: uniq },
+      where: {
+        date_modeConfigId: { date: day, modeConfigId }
+      },
+      create: {
+        date: day,
+        modeConfigId,
+        initiatedPlays: i,
+        completedPlays: c,
+        uncompletedPlays: u,
+        averageAttempts: avg,
+        uniqueUsers: uniq,
+        overviewId: overview!.id,
+      },
+      update: {
+        initiatedPlays: i,
+        completedPlays: c,
+        uncompletedPlays: u,
+        averageAttempts: avg,
+        uniqueUsers: uniq,
+      },
     });
   }
 }
