@@ -1,34 +1,35 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { StatsService } from './stats.service';
-import { CreateStatDto } from './dto/create-stat.dto';
-import { UpdateStatDto } from './dto/update-stat.dto';
+import { Controller, Get, Param, Query, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { StatsService }     from './stats.service';
+import { OverviewStatsDto } from './dto/overview-stats.dto';
+import { ModeStatsDto }     from './dto/mode-stats.dto';
+import { PlayStatsDto }     from './dto/play-stats.dto';
+import { JwtAuthGuard }     from 'src/auth/guard/jwt-auth.guard';
+import { Roles }            from 'src/common/decorators/roles.decorator';
+import { Role }             from '@prisma/client';
 
+@UseGuards(JwtAuthGuard)
+@Roles(Role.ADMIN)
 @Controller('stats')
 export class StatsController {
-  constructor(private readonly statsService: StatsService) {}
+  constructor(private readonly svc: StatsService) {}
 
-  @Post()
-  create(@Body() createStatDto: CreateStatDto) {
-    return this.statsService.create(createStatDto);
+  @Get('overview')
+  overview(@Query('date') date?: string): Promise<OverviewStatsDto> {
+    return this.svc.getOverview(date);
   }
 
-  @Get()
-  findAll() {
-    return this.statsService.findAll();
+  @Get('mode/:modeId')
+  modeStats(
+    @Param('modeId', ParseIntPipe) modeId: number,
+    @Query('date') date?: string,
+  ): Promise<ModeStatsDto> {
+    return this.svc.getModeStats(modeId, date);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.statsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateStatDto: UpdateStatDto) {
-    return this.statsService.update(+id, updateStatDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.statsService.remove(+id);
+  @Get('play/:playId')
+  playStats(
+    @Param('playId', ParseIntPipe) playId: number,
+  ): Promise<PlayStatsDto> {
+    return this.svc.getPlayStats(playId);
   }
 }

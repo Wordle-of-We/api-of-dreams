@@ -87,6 +87,7 @@ model ModeConfig {
   attempts        Attempt[]
   dailySelections DailySelection[]
   accessLogs      AccessLog[]
+  ModeDailyStats  ModeDailyStats[]
 }
 
 model Play {
@@ -96,6 +97,7 @@ model Play {
   modeConfigId  Int
   characterId   Int
   attemptsCount Int      @default(0)
+  completed     Boolean  @default(false)
   createdAt     DateTime @default(now())
 
   user       User?      @relation(fields: [userId], references: [id])
@@ -105,21 +107,23 @@ model Play {
 }
 
 model Attempt {
-  id                 Int        @id @default(autoincrement())
+  id                 Int      @id @default(autoincrement())
+  attemptNumber      Int      @default(0)
   userId             Int?
-  user               User?      @relation(fields: [userId], references: [id])
   guestId            String?
   targetCharacterId  Int
-  targetCharacter    Character  @relation("target", fields: [targetCharacterId], references: [id])
   guessedCharacterId Int?
-  guessedCharacter   Character? @relation("guessed", fields: [guessedCharacterId], references: [id])
   modeConfigId       Int
-  modeConfig         ModeConfig @relation(fields: [modeConfigId], references: [id])
   guess              String
-  isCorrect          Boolean    @default(false)
-  createdAt          DateTime   @default(now())
-  Play               Play?      @relation(fields: [playId], references: [id])
-  playId             Int?
+  isCorrect          Boolean  @default(false)
+  createdAt          DateTime @default(now())
+
+  user             User?      @relation(fields: [userId], references: [id])
+  targetCharacter  Character  @relation("target", fields: [targetCharacterId], references: [id])
+  guessedCharacter Character? @relation("guessed", fields: [guessedCharacterId], references: [id])
+  modeConfig       ModeConfig @relation(fields: [modeConfigId], references: [id])
+  play             Play?      @relation(fields: [playId], references: [id])
+  playId           Int?
 }
 
 model DailySelection {
@@ -141,4 +145,33 @@ model AccessLog {
   modeConfig   ModeConfig? @relation(fields: [modeConfigId], references: [id])
   modeConfigId Int?
   createdAt    DateTime    @default(now())
+}
+
+model DailyOverview {
+  id                    Int              @id @default(autoincrement())
+  date                  DateTime         @unique
+  totalUsersEver        Int
+  totalNewUsers         Int
+  totalInitiatedPlays   Int
+  totalCompletedPlays   Int
+  totalUncompletedPlays Int
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  modeStats             ModeDailyStats[]
+}
+
+model ModeDailyStats {
+  id               Int           @id @default(autoincrement())
+  date             DateTime
+  modeConfig       ModeConfig    @relation(fields: [modeConfigId], references: [id])
+  modeConfigId     Int
+  initiatedPlays   Int
+  completedPlays   Int
+  uncompletedPlays Int
+  averageAttempts  Float
+  uniqueUsers      Int
+  overview         DailyOverview @relation(fields: [overviewId], references: [id])
+  overviewId       Int
+
+  @@unique([date, modeConfigId])
 }
