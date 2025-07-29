@@ -8,106 +8,72 @@ import { PlayStatsDto } from './dto/play-stats.dto';
 export class StatsService {
   constructor(private readonly prisma: PrismaService) { }
 
-  async getOverview(date?: Date): Promise<OverviewStatsDto> {
-    const d = date ?? new Date();
-    const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
-    const end = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 0, 0, 0, 0);
+  private buildDayStart(dateStr?: string): Date {
+    if (dateStr) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      return new Date(y, m - 1, d, 0, 0, 0, 0);
+    }
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  }
 
-    const overview = await this.prisma.dailyOverview.findFirst({
-      where: { date: { gte: start, lt: end } },
+  async getOverview(date?: string): Promise<OverviewStatsDto> {
+    const day = this.buildDayStart(date);
+    const overview = await this.prisma.dailyOverview.findUnique({
+      where: { date: day },
       include: {
         modeStats: {
-          include: { modeConfig: { select: { name: true } } }
+          include: {
+            modeConfig: { select: { name: true } }
+          }
         }
       }
     });
-
-    const totalUsersEver = await this.prisma.user.count();
-
     if (!overview) {
-      return {
-        totalUsersEver,
-        totalNewUsers: 0,
-        totalInitiatedPlays: 0,
-        totalCompletedPlays: 0,
-        totalUncompletedPlays: 0,
-        playsByMode: {},
-        allPlays: []
-      };
+      throw new NotFoundException('Nenhum snapshot para esta data');
     }
 
     const playsByMode: OverviewStatsDto['playsByMode'] = {};
-    for (const m of overview.modeStats) {
-      playsByMode[m.modeConfig.name] = {
-        initiated: m.initiatedPlays,
-        completed: m.completedPlays,
-        uncompleted: m.uncompletedPlays,
+    for (const stat of overview.modeStats) {
+      playsByMode[stat.modeConfig.name] = {
+        initiated: stat.initiatedPlays,
+        completed: stat.completedPlays,
+        uncompleted: stat.uncompletedPlays,
       };
     }
 
-    const allPlays = await this.prisma.play.findMany({
-      where: { createdAt: { gte: start, lt: end } },
-      select: {
-        id: true,
-        modeConfigId: true,
-        modeConfig: { select: { name: true } },
-        completed: true,
-        attemptsCount: true,
-      }
-    });
-
     return {
-      totalUsersEver,
+      totalUsersEver: overview.totalUsersEver,
       totalNewUsers: overview.totalNewUsers,
       totalInitiatedPlays: overview.totalInitiatedPlays,
       totalCompletedPlays: overview.totalCompletedPlays,
       totalUncompletedPlays: overview.totalUncompletedPlays,
-      playsByMode,
-      allPlays: allPlays.map(p => ({
-        playId: p.id,
-        modeConfigId: p.modeConfigId,
-        modeName: p.modeConfig.name,
-        completed: p.completed,
-        attemptsCount: p.attemptsCount,
-      }))
+      playsByMode
     };
   }
 
   async getModeStats(
     modeConfigId: number,
-    date?: Date
+    date?: string,
   ): Promise<ModeStatsDto> {
-    const d = date ?? new Date();
-    const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
-    const end = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 0, 0, 0, 0);
-
-    // busca o snapshot daquele modo
-    const ms = await this.prisma.modeDailyStats.findFirst({
+    const day = this.buildDayStart(date);
+    const ms = await this.prisma.modeDailyStats.findUnique({
       where: {
-        modeConfigId,
-        date: { gte: start, lt: end }
+        date_modeConfigId: {
+          date: day,
+          modeConfigId,
+        }
       },
-      include: { modeConfig: { select: { name: true } } }
+      include: {
+        modeConfig: { select: { name: true } }
+      }
     });
-
     if (!ms) {
-      const mode = await this.prisma.modeConfig.findUnique({
-        where: { id: modeConfigId },
-        select: { name: true }
-      });
-      return {
-        modeConfigId,
-        modeName: mode?.name ?? 'Desconhecido',
-        initiatedPlays: 0,
-        completedPlays: 0,
-        uncompletedPlays: 0,
-        averageAttempts: 0,
-        uniqueUsers: 0,
-      };
+      throw new NotFoundException('Nenhum snapshot para este modo e data');
     }
 
     return {
-      modeConfigId,
+      modeConfigId: ms.modeConfigId,
       modeName: ms.modeConfig.name,
       initiatedPlays: ms.initiatedPlays,
       completedPlays: ms.completedPlays,
@@ -123,7 +89,7 @@ export class StatsService {
       include: {
         attempts: {
           orderBy: { createdAt: 'asc' },
-          select: { guess: true, isCorrect: true }
+          select: { guess: true, isCorrect: true },
         }
       }
     });

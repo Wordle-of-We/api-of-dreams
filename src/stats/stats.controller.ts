@@ -1,11 +1,11 @@
 import { Controller, Get, Param, Query, ParseIntPipe, UseGuards } from '@nestjs/common';
-import { StatsService }            from './stats.service';
-import { OverviewStatsDto }        from './dto/overview-stats.dto';
-import { ModeStatsDto }            from './dto/mode-stats.dto';
-import { PlayStatsDto }            from './dto/play-stats.dto';
-import { JwtAuthGuard }            from 'src/auth/guard/jwt-auth.guard';
-import { Roles }                   from 'src/common/decorators/roles.decorator';
-import { Role }                    from '@prisma/client';
+import { StatsService }     from './stats.service';
+import { OverviewStatsDto } from './dto/overview-stats.dto';
+import { ModeStatsDto }     from './dto/mode-stats.dto';
+import { PlayStatsDto }     from './dto/play-stats.dto';
+import { JwtAuthGuard }     from 'src/auth/guard/jwt-auth.guard';
+import { Roles }            from 'src/common/decorators/roles.decorator';
+import { Role }             from '@prisma/client';
 
 @UseGuards(JwtAuthGuard)
 @Roles(Role.ADMIN)
@@ -15,7 +15,7 @@ export class StatsController {
 
   @Get('overview')
   overview(@Query('date') date?: string): Promise<OverviewStatsDto> {
-    return this.svc.getOverview(date ? new Date(date) : undefined);
+    return this.svc.getOverview(date);
   }
 
   @Get('mode/:modeId')
@@ -23,7 +23,7 @@ export class StatsController {
     @Param('modeId', ParseIntPipe) modeId: number,
     @Query('date') date?: string,
   ): Promise<ModeStatsDto> {
-    return this.svc.getModeStats(modeId, date ? new Date(date) : undefined);
+    return this.svc.getModeStats(modeId, date);
   }
 
   @Get('play/:playId')

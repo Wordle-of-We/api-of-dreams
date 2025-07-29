@@ -8,11 +8,4 @@ export class OverviewStatsDto {
     string,
     { initiated: number; completed: number; uncompleted: number }
   >;
-  allPlays: {
-    playId: number;
-    modeConfigId: number;
-    modeName: string;
-    completed: boolean;
-    attemptsCount: number;
-  }[];
 }

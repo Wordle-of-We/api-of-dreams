@@ -12,7 +12,7 @@ export class StatsSnapshotService {
     return d;
   }
 
-  @Cron('35 08 * * *')
+  @Cron('* */01 * * *')
   async syncDay() {
     const today = this.dayStart(new Date());
     await this.updateDailyOverview(today);
