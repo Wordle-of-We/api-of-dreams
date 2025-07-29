@@ -11,6 +11,7 @@ import { AttemptsModule } from './attempts/attempts.module';
 import { AccessLogsModule } from './access-logs/access-logs.module';
 import { StatsModule } from './stats/stats.module';
 import { GameModeModule } from './game-mode/game-mode.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { GameModeModule } from './game-mode/game-mode.module';
     AccessLogsModule,
     StatsModule,
     GameModeModule,
+    AdminModule,
   ],
 })
 export class AppModule { }
