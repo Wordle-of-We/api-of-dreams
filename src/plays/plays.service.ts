@@ -13,6 +13,7 @@ export interface GuessResult {
   guess: string;
   isCorrect: boolean;
   playCompleted: boolean;
+  guessedImageUrl1: string | null;
   comparison: {
     gender: Comparison<string>;
     race: Comparison<string[]>;
@@ -91,8 +92,11 @@ export class PlaysService {
     if (!play) {
       throw new NotFoundException('Partida não encontrada');
     }
-    const target = play.character;
+    if (play.completed) {
+      throw new BadRequestException('Partida já concluída');
+    }
 
+    const target = play.character;
     const ownerFilter = play.userId
       ? { userId: play.userId }
       : { guestId: play.guestId! };
@@ -162,6 +166,7 @@ export class PlaysService {
       guess: attempt.guess,
       isCorrect,
       playCompleted: isCorrect,
+      guessedImageUrl1: guessed.imageUrl1 ?? null,
       comparison,
       triedAt: attempt.createdAt,
     };
@@ -213,6 +218,7 @@ export class PlaysService {
         guess: a.guess,
         isCorrect: a.isCorrect,
         playCompleted: a.isCorrect,
+        guessedImageUrl1: gss.imageUrl1 ?? null,
         comparison,
         triedAt: a.createdAt,
       };
