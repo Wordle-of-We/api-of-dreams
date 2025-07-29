@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum AliveStatus {
+  ALIVE
+  DEAD
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  plays      Play[]
+  attempts   Attempt[]
+  accessLogs AccessLog[]
+}
+
+model Franchise {
+  id         Int                  @id @default(autoincrement())
+  name       String               @unique
+  createdAt  DateTime             @default(now())
+  imageUrl   String?
+  characters CharacterFranchise[]
+}
+
+model Character {
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
+  description String?
+  emojis      String[]    @default([])
+  gender      Gender
+  race        String[]    @default([])
+  ethnicity   String[]    @default([])
+  hair        String
+  aliveStatus AliveStatus
+  paper       Boolean?    @default(false)
+  imageUrl1   String?
+  imageUrl2   String?
+
+  franchises      CharacterFranchise[]
+  plays           Play[]
+  dailySelections DailySelection[]
+
+  targetAttempts  Attempt[] @relation("target")
+  guessedAttempts Attempt[] @relation("guessed")
+}
+
+model CharacterFranchise {
+  character   Character @relation(fields: [characterId], references: [id])
+  characterId Int
+  franchise   Franchise @relation(fields: [franchiseId], references: [id])
+  franchiseId Int
+
+  @@id([characterId, franchiseId])
+}
+
+model ModeConfig {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  plays           Play[]
+  attempts        Attempt[]
+  dailySelections DailySelection[]
+  accessLogs      AccessLog[]
+  ModeDailyStats  ModeDailyStats[]
+}
+
+model Play {
+  id            Int      @id @default(autoincrement())
+  userId        Int?
+  guestId       String?
+  modeConfigId  Int
+  characterId   Int
+  attemptsCount Int      @default(0)
+  completed     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  user       User?      @relation(fields: [userId], references: [id])
+  modeConfig ModeConfig @relation(fields: [modeConfigId], references: [id])
+  character  Character  @relation(fields: [characterId], references: [id])
+  attempts   Attempt[]
+}
+
+model Attempt {
+  id                 Int      @id @default(autoincrement())
+  attemptNumber      Int      @default(0)
+  userId             Int?
+  guestId            String?
+  targetCharacterId  Int
+  guessedCharacterId Int?
+  modeConfigId       Int
+  guess              String
+  isCorrect          Boolean  @default(false)
+  createdAt          DateTime @default(now())
+
+  user             User?      @relation(fields: [userId], references: [id])
+  targetCharacter  Character  @relation("target", fields: [targetCharacterId], references: [id])
+  guessedCharacter Character? @relation("guessed", fields: [guessedCharacterId], references: [id])
+  modeConfig       ModeConfig @relation(fields: [modeConfigId], references: [id])
+  play             Play?      @relation(fields: [playId], references: [id])
+  playId           Int?
+}
+
+model DailySelection {
+  id           Int        @id @default(autoincrement())
+  date         DateTime
+  modeConfig   ModeConfig @relation(fields: [modeConfigId], references: [id])
+  modeConfigId Int
+  character    Character  @relation(fields: [characterId], references: [id])
+  characterId  Int
+
+  @@unique([date, modeConfigId])
+}
+
+model AccessLog {
+  id           Int         @id @default(autoincrement())
+  user         User?       @relation(fields: [userId], references: [id])
+  userId       Int?
+  endpoint     String
+  modeConfig   ModeConfig? @relation(fields: [modeConfigId], references: [id])
+  modeConfigId Int?
+  createdAt    DateTime    @default(now())
+}
+
+model DailyOverview {
+  id                    Int              @id @default(autoincrement())
+  date                  DateTime         @unique
+  totalUsersEver        Int
+  totalNewUsers         Int
+  totalInitiatedPlays   Int
+  totalCompletedPlays   Int
+  totalUncompletedPlays Int
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  modeStats             ModeDailyStats[]
+}
+
+model ModeDailyStats {
+  id               Int           @id @default(autoincrement())
+  date             DateTime
+  modeConfig       ModeConfig    @relation(fields: [modeConfigId], references: [id])
+  modeConfigId     Int
+  initiatedPlays   Int
+  completedPlays   Int
+  uncompletedPlays Int
+  averageAttempts  Float
+  uniqueUsers      Int
+  overview         DailyOverview @relation(fields: [overviewId], references: [id])
+  overviewId       Int
+
+  @@unique([date, modeConfigId])
+}
