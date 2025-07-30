@@ -14,7 +14,7 @@ async function bootstrap() {
       'http://localhost:3001',
       'https://panel-dreamdle.vercel.app',
       'http://localhost:3000',
-      'liara.picos.ifpi.edu.br'
+      'http://liara.picos.ifpi.edu.br'
     ],
     credentials: true,
   });
