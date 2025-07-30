@@ -41,7 +41,7 @@ export class AuthController {
     res.cookie('authToken', token, {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'none' : 'lax',
+      sameSite: 'strict',
       path: '/',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
@@ -66,7 +66,7 @@ export class AuthController {
     res.clearCookie('authToken', {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'none' : 'lax',
+      sameSite: 'strict',
       path: '/',
     });
     return { message: 'Logout efetuado com sucesso' };
