@@ -13,7 +13,8 @@ async function bootstrap() {
     origin: [
       'http://localhost:3001',
       'https://panel-dreamdle.vercel.app',
-      'http://localhost:3000'
+      'http://localhost:3000',
+      'liara.picos.ifpi.edu.br'
     ],
     credentials: true,
   });
