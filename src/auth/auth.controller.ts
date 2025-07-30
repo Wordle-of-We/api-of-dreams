@@ -1,57 +1,74 @@
-import { Controller, Post, Body, Res, UnauthorizedException, UseGuards, Req, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Res,
+  Req,
+  Get,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
+import { Response, Request } from 'express';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
-import { Response } from 'express';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
-import { Roles } from 'src/common/decorators/roles.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+
+interface RequestWithUser extends Request {
+  user: { userId: number; email: string };
+}
 
 @ApiTags('Autenticação')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  async login(@Body() createAuthDTO: CreateAuthDto, @Res() res: Response) {
-    console.log('🔍 Dados recebidos no DTO:', createAuthDTO);
-
-    if (!createAuthDTO.email || !createAuthDTO.password) {
-      throw new UnauthorizedException('E-mail e senha são obrigatórios');
+  async login(
+    @Body() dto: CreateAuthDto,
+    @Res() res: Response,
+  ) {
+    const { email, password } = dto;
+    if (!email || !password) {
+      throw new UnauthorizedException('E‑mail e senha são obrigatórios');
     }
 
-    const { token, user } = await this.authService.login(createAuthDTO.email, createAuthDTO.password);
+    const { token, user } = await this.authService.login(email, password);
+    const isProd = process.env.NODE_ENV === 'production';
 
     res.cookie('authToken', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
       path: '/',
       maxAge: 1000 * 60 * 60 * 24 * 7,
     });
 
-    return res.json({ message: 'Login realizado com sucesso!', user });
+    return res.json({ user });
   }
 
+  @Get('profile')
   @UseGuards(JwtAuthGuard)
   @Roles(Role.ADMIN)
-  @Get('profile')
   @ApiBearerAuth()
-  getProfile(@Req() req) {
+  getProfile(@Req() req: RequestWithUser) {
     return req.user;
   }
 
+  @Post('logout')
   @UseGuards(JwtAuthGuard)
   @Roles(Role.ADMIN)
-  @Post('logout')
   @ApiBearerAuth()
   async logout(
-    @Res({ passthrough: true }) res: Response
+    @Res({ passthrough: true }) res: Response,
   ) {
+    const isProd = process.env.NODE_ENV === 'production';
     res.clearCookie('authToken', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
       path: '/',
     });
     return { message: 'Logout efetuado com sucesso' };
