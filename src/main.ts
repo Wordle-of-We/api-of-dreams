@@ -17,6 +17,8 @@ async function bootstrap() {
       'http://liara.picos.ifpi.edu.br'
     ],
     credentials: true,
+    allowedHeaders: ['Content-Type','Authorization'],
+    exposedHeaders: ['Authorization'],
   });
 
   app.useGlobalPipes(
