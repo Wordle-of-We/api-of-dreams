@@ -36,17 +36,17 @@ export class AuthController {
     }
 
     const { token, user } = await this.authService.login(email, password);
-    const isProd = process.env.NODE_ENV === 'production';
 
+    const isProd = process.env.NODE_ENV === 'production';
     res.cookie('authToken', token, {
       httpOnly: true,
       secure: isProd,
       sameSite: isProd ? 'none' : 'lax',
       path: '/',
-      maxAge: 1000 * 60 * 60 * 24 * 7,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    return res.json({ user });
+    return res.json({ token, user });
   }
 
   @Get('profile')
@@ -61,9 +61,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
-  async logout(
-    @Res({ passthrough: true }) res: Response,
-  ) {
+  async logout(@Res({ passthrough: true }) res: Response) {
     const isProd = process.env.NODE_ENV === 'production';
     res.clearCookie('authToken', {
       httpOnly: true,
