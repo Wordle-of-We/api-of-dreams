@@ -54,7 +54,7 @@ model Character {
   ethnicity   String[]    @default([])
   hair        String
   aliveStatus AliveStatus
-  paper       Boolean?    @default(false)
+  paper       String[]    @default([])
   imageUrl1   String?
   imageUrl2   String?
 

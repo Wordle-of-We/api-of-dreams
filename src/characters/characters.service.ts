@@ -40,7 +40,7 @@ export class CharactersService {
         ethnicity: dto.ethnicity ?? [],
         hair: dto.hair,
         aliveStatus: dto.aliveStatus,
-        paper: dto.paper ?? false,
+        paper: dto.paper ?? [],
         imageUrl1,
         imageUrl2: dto.imageUrl2,
         franchises: dto.franchiseIds
@@ -97,6 +97,9 @@ export class CharactersService {
       where: { id },
       data: {
         ...rest,
+        ...(dto.paper !== undefined
+          ? { paper: { set: dto.paper } }
+          : {}),
         imageUrl2: dto.imageUrl2,
         franchises: franchiseIds
           ? {

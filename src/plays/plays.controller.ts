@@ -10,7 +10,7 @@ import {
   ParseIntPipe,
   UseGuards,
 } from '@nestjs/common';
-import { PlaysService } from './plays.service';
+import { GuessResult, PlaysService } from './plays.service';
 import { StartPlayDto } from './dto/start-play.dto';
 import { GuessDto } from './dto/create-play.dto';
 import { OptionalAuthGuard } from '../auth/guard/optional-auth.guard';
@@ -40,7 +40,7 @@ export class PlaysController {
     @Req() req: RequestWithUser,
     @Param('playId', ParseIntPipe) playId: number,
     @Body() dto: GuessDto,
-  ) {
+  ): Promise<GuessResult> {
     const userId = req.user?.userId;
     return this.playsService.makeGuess(userId, playId, dto.guess);
   }
