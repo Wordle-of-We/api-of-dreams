@@ -34,8 +34,9 @@ export class CreateCharacterDto {
   @IsEnum(AliveStatus)
   aliveStatus: AliveStatus;
 
-  @IsOptional() @IsString()
-  paper?: string[]
+  @IsArray()
+  @IsString({ each: true })
+  paper: string[];
 
   @ApiPropertyOptional({ type: [Number] })
   @IsOptional() @IsArray() @ArrayNotEmpty()

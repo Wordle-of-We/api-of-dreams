@@ -115,6 +115,7 @@ model Attempt {
   guessedCharacterId Int?
   modeConfigId       Int
   guess              String
+  order              Int
   isCorrect          Boolean  @default(false)
   createdAt          DateTime @default(now())
 

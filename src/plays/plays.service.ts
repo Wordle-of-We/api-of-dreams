@@ -25,7 +25,7 @@ export class PlaysService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly statsSnapshot: StatsSnapshotService,
-  ) {}
+  ) { }
 
   async startPlay(userId: number | undefined, modeConfigId: number) {
     const today = new Date()
@@ -124,6 +124,12 @@ export class PlaysService {
 
     const attemptNumber = play.attemptsCount + 1
     const isCorrect = guessed.id === target.id
+    const previousAttemptsCount = await this.prisma.attempt.count({
+      where: {
+        ...ownerFilter,
+        playId,
+      },
+    });
 
     const attempt = await this.prisma.attempt.create({
       data: {
@@ -134,6 +140,7 @@ export class PlaysService {
         guess: guess.trim(),
         isCorrect,
         playId,
+        order: previousAttemptsCount + 1,
       },
     })
 
@@ -178,14 +185,14 @@ export class PlaysService {
 
       default:
         comparison = {
-          gênero:       { guessed: guessed.gender,       target: target.gender },
-          raça:         { guessed: guessed.race,         target: target.race },
-          etnia:        { guessed: guessed.ethnicity,    target: target.ethnicity },
-          cabelo:       { guessed: guessed.hair,         target: target.hair },
-          status:       { guessed: guessed.aliveStatus,  target: target.aliveStatus },
-          franchises:   {
+          gênero: { guessed: guessed.gender, target: target.gender },
+          raça: { guessed: guessed.race, target: target.race },
+          etnia: { guessed: guessed.ethnicity, target: target.ethnicity },
+          cabelo: { guessed: guessed.hair, target: target.hair },
+          status: { guessed: guessed.aliveStatus, target: target.aliveStatus },
+          franchises: {
             guessed: guessed.franchises.map(cf => cf.franchise.name),
-            target:  target.franchises.map(cf => cf.franchise.name),
+            target: target.franchises.map(cf => cf.franchise.name),
           },
         }
         break
@@ -222,10 +229,10 @@ export class PlaysService {
     const atts = await this.prisma.attempt.findMany({
       where: { ...ownerFilter, playId },
       include: {
-        targetCharacter:  { include: { franchises: { include: { franchise: true } } } },
+        targetCharacter: { include: { franchises: { include: { franchise: true } } } },
         guessedCharacter: { include: { franchises: { include: { franchise: true } } } },
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { order: 'asc' },
     })
 
     return atts.map((a, idx) => {
@@ -292,14 +299,112 @@ export class PlaysService {
       }
 
       return {
-        attemptNumber:   idx + 1,
-        guess:           a.guess,
-        isCorrect:       a.isCorrect,
-        playCompleted:   a.isCorrect,
+        attemptNumber: idx + 1,
+        guess: a.guess,
+        isCorrect: a.isCorrect,
+        playCompleted: a.isCorrect,
         guessedImageUrl1: gss.imageUrl1 ?? null,
         comparison,
-        triedAt:         a.createdAt,
+        triedAt: a.createdAt,
       }
     })
   }
+
+  async getDailyProgress(userId: number | undefined, modeConfigId: number) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const play = await this.prisma.play.findFirst({
+      where: {
+        modeConfigId,
+        createdAt: { gte: today },
+        ...(userId ? { userId } : {}),
+      },
+      include: {
+        modeConfig: { select: { name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!play) return { alreadyPlayed: false };
+
+    const attemptsRaw = await this.prisma.attempt.findMany({
+      where: {
+        playId: play.id,
+        ...(userId ? { userId } : { guestId: play.guestId! }),
+      },
+      include: {
+        targetCharacter: { include: { franchises: { include: { franchise: true } } } },
+        guessedCharacter: { include: { franchises: { include: { franchise: true } } } },
+      },
+      orderBy: { order: 'asc' },
+    });
+
+    const mode = play.modeConfig.name;
+    const attempts = attemptsRaw.map((a) => {
+      const tgt = a.targetCharacter;
+      const gss = a.guessedCharacter!;
+      let comparison: GuessResult['comparison'] = {};
+
+      switch (mode) {
+        case 'Descrição':
+          comparison = {
+            descrição: {
+              guessed: gss.description ?? '',
+              target: tgt.description ?? '',
+            },
+          };
+          break;
+
+        case 'Emoji':
+          comparison = {
+            emojis: {
+              guessed: gss.emojis,
+              target: tgt.emojis,
+            },
+          };
+          break;
+
+        case 'Imagem':
+          comparison = {
+            imagem: {
+              guessed: gss.imageUrl1 ?? '',
+              target: tgt.imageUrl1 ?? '',
+            },
+          };
+          break;
+
+        default:
+          comparison = {
+            gênero: { guessed: gss.gender, target: tgt.gender },
+            raça: { guessed: gss.race, target: tgt.race },
+            etnia: { guessed: gss.ethnicity, target: tgt.ethnicity },
+            cabelo: { guessed: gss.hair, target: tgt.hair },
+            status: { guessed: gss.aliveStatus, target: tgt.aliveStatus },
+            franchises: {
+              guessed: gss.franchises.map(f => f.franchise.name),
+              target: tgt.franchises.map(f => f.franchise.name),
+            },
+          };
+      }
+
+      return {
+        attemptNumber: a.order,
+        guess: a.guess,
+        isCorrect: a.isCorrect,
+        playCompleted: a.isCorrect,
+        guessedImageUrl1: gss.imageUrl1 ?? null,
+        comparison,
+        triedAt: a.createdAt,
+      };
+    });
+
+    return {
+      alreadyPlayed: true,
+      playId: play.id,
+      completed: play.completed,
+      attempts,
+    };
+  }
+
 }

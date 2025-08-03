@@ -54,4 +54,14 @@ export class PlaysController {
     const userId = req.user?.userId;
     return this.playsService.getAttemptsByPlay(userId, playId);
   }
+
+    @Get('progress/:modeConfigId')
+  @UseGuards(OptionalAuthGuard)
+  async getProgress(
+    @Req() req: RequestWithUser,
+    @Param('modeConfigId', ParseIntPipe) modeConfigId: number,
+  ) {
+    const userId = req.user?.userId;
+    return this.playsService.getDailyProgress(userId, modeConfigId);
+  }
 }
