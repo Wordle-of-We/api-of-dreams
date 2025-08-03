@@ -6,7 +6,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class DailySelectionService {
   private readonly logger = new Logger(DailySelectionService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   @Cron('* 13 * * *', { timeZone: 'America/Fortaleza' })
   async triggerGenerateRoute() {
@@ -39,7 +39,7 @@ export class DailySelectionService {
         usedToday.add(exists.characterId);
         continue;
       }
-
+      
       const where = {
         AND: [
           { id: { notIn: Array.from(usedToday) } },
@@ -55,42 +55,68 @@ export class DailySelectionService {
           },
         ],
       };
-
+      
       const total = await this.prisma.character.count({ where });
       if (total === 0) {
         this.logger.warn(`Sem candidatos para modo ${modeConfig.name}`);
         continue;
       }
-
+      
       const skip = Math.floor(Math.random() * total);
       const [character] = await this.prisma.character.findMany({
         where,
         skip,
         take: 1,
       });
-
+      
       await this.prisma.dailySelection.create({
         data: {
           date: today,
           modeConfig: { connect: { id: modeConfig.id } },
-          character:  { connect: { id: character.id } },
+          character: { connect: { id: character.id } },
         },
       });
-
+      
       usedToday.add(character.id);
       this.logger.log(`Sorteado ${character.name} para modo ${modeConfig.name}`);
     }
   }
 
+  async createManualSelection(dto: { characterId: number; modeConfigId: number }) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const character = await this.prisma.character.findUnique({
+      where: { id: dto.characterId },
+    });
+
+    const modeConfig = await this.prisma.modeConfig.findUnique({
+      where: { id: dto.modeConfigId },
+    });
+
+    if (!character || !modeConfig) {
+      throw new Error('Character ou ModeConfig não encontrados.');
+    }
+
+    return this.prisma.dailySelection.create({
+      data: {
+        date: today,
+        character: { connect: { id: dto.characterId } },
+        modeConfig: { connect: { id: dto.modeConfigId } },
+      },
+    });
+  }
+  
   async getTodaySelection(modeId?: number) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const where: any = { date: today };
     if (modeId) where.modeConfigId = modeId;
-
+    
     return this.prisma.dailySelection.findMany({
       where,
       include: { character: true, modeConfig: true },
     });
   }
+
 }
