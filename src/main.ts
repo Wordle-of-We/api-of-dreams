@@ -14,7 +14,10 @@ async function bootstrap() {
     origin: isProd
       ? [
           'https://panel‑dreamdle.vercel.app',
-          'http://liara.picos.ifpi.edu.br'
+          'http://liara.picos.ifpi.edu.br',
+          'https://wordle-of-dreams-sandy.vercel.app',
+          'https://panel-dreamdle-avelar-rodrigues-de-sousas-projects.vercel.app'
+
         ]
       : [
           'http://localhost:3000',
