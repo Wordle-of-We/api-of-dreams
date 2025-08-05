@@ -13,11 +13,10 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
-import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 
 interface RequestWithUser extends Request {
-  user: { userId: number; email: string };
+  user: { userId: number; email: string; role: Role };
 }
 
 @ApiTags('Autenticação')
@@ -35,11 +34,18 @@ export class AuthController {
       throw new UnauthorizedException('E-mail e senha são obrigatórios');
     }
 
-    const { token, user } = await this.authService.login(email, password);
+    const user = await this.authService.validateUser(email, password);
+
+    if (user.role !== Role.ADMIN) {
+      throw new UnauthorizedException('Acesso restrito a administradores');
+    }
+
+    const { token } = await this.authService.login(email, password);
 
     res.cookie('authToken', token, {
       httpOnly: true,
-      sameSite: 'none',
+      sameSite: 'strict',
+      secure: true,
       path: '/',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
@@ -49,7 +55,6 @@ export class AuthController {
 
   @Get('profile')
   @UseGuards(JwtAuthGuard)
-  @Roles(Role.ADMIN)
   @ApiBearerAuth()
   getProfile(@Req() req: RequestWithUser) {
     return req.user;
@@ -57,12 +62,12 @@ export class AuthController {
 
   @Post('logout')
   @UseGuards(JwtAuthGuard)
-  @Roles(Role.ADMIN)
   @ApiBearerAuth()
   async logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('authToken', {
       httpOnly: true,
-      sameSite: 'none',
+      sameSite: 'strict',
+      secure: true,
       path: '/',
     });
     return { message: 'Logout efetuado com sucesso' };
