@@ -9,26 +9,24 @@ import {
   ParseIntPipe,
   UseGuards,
   Req,
-  Res,
   ForbiddenException,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Request } from 'express';
+import { AuthGuard } from '@nestjs/passport';
+import { Roles } from '../common/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
-import { Roles } from '../common/decorators/roles.decorator';
-import { Role } from '@prisma/client';
+import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 
-type RequestWithUser = Request & {
+interface RequestWithUser extends Request {
   user: { userId: number; role: Role };
-};
+}
 
 @Controller('users')
 export class UsersController {
-  constructor(
-    private readonly usersService: UsersService,
-  ) {}
+  constructor(private readonly usersService: UsersService) {}
 
   @Post()
   async create(@Body() dto: CreateUserDto) {
@@ -65,20 +63,14 @@ export class UsersController {
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: RequestWithUser,
-    @Res({ passthrough: true }) res: Response,
   ) {
-    const requester = req.user;
-    if (requester.userId !== id && requester.role !== Role.ADMIN) {
-      throw new ForbiddenException('Você não tem permissão para excluir este usuário.');
+    const { userId, role } = req.user;
+    if (userId !== id && role !== Role.ADMIN) {
+      throw new ForbiddenException(
+        'Você não tem permissão para excluir este usuário.',
+      );
     }
     await this.usersService.remove(id);
-    if (requester.userId === id) {
-      res.clearCookie('authToken', {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-      });
-    }
     return { message: 'Usuário removido com sucesso.' };
   }
 }

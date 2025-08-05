@@ -1,5 +1,3 @@
-// src/plays/plays.controller.ts
-
 import {
   Controller,
   Post,
@@ -55,7 +53,7 @@ export class PlaysController {
     return this.playsService.getAttemptsByPlay(userId, playId);
   }
 
-    @Get('progress/:modeConfigId')
+  @Get('progress/:modeConfigId')
   @UseGuards(OptionalAuthGuard)
   async getProgress(
     @Req() req: RequestWithUser,

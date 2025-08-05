@@ -2,33 +2,28 @@ import {
   Controller,
   Post,
   Body,
-  Res,
-  Req,
   Get,
-  UnauthorizedException,
   UseGuards,
+  UnauthorizedException,
+  Req,
 } from '@nestjs/common';
-import { Response, Request } from 'express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
-import { JwtAuthGuard } from './guard/jwt-auth.guard';
 import { Role } from '@prisma/client';
+import { AuthGuard } from '@nestjs/passport';
 
-interface RequestWithUser extends Request {
+interface RequestWithUser {
   user: { userId: number; email: string; role: Role };
 }
 
 @ApiTags('Autenticação')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Post('login')
-  async login(
-    @Body() dto: CreateAuthDto,
-    @Res() res: Response,
-  ) {
+  async login(@Body() dto: CreateAuthDto) {
     const { email, password } = dto;
     if (!email || !password) {
       throw new UnauthorizedException('E-mail e senha são obrigatórios');
@@ -41,35 +36,20 @@ export class AuthController {
     }
 
     const { token } = await this.authService.login(email, password);
-
-    res.cookie('authToken', token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: true,
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    return res.json({ token, user });
+    return { token, user };
   }
 
   @Get('profile')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
   getProfile(@Req() req: RequestWithUser) {
     return req.user;
   }
 
   @Post('logout')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  async logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('authToken', {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: true,
-      path: '/',
-    });
-    return { message: 'Logout efetuado com sucesso' };
+  logout() {
+    return { message: 'Faça logout removendo o token no client-side.' };
   }
 }
