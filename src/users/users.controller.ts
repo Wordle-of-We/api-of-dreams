@@ -14,7 +14,6 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { UsersService } from './users.service';
-import { StatsSnapshotService } from '../stats/stats-snapshot.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
@@ -33,8 +32,7 @@ export class UsersController {
 
   @Post()
   async create(@Body() dto: CreateUserDto) {
-    const user = await this.usersService.create(dto);
-    return user;
+    return this.usersService.create(dto);
   }
 
   @Get()
@@ -77,8 +75,7 @@ export class UsersController {
     if (requester.userId === id) {
       res.clearCookie('authToken', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: 'none',
         path: '/',
       });
     }
