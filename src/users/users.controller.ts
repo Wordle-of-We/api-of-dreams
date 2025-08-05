@@ -75,7 +75,7 @@ export class UsersController {
     if (requester.userId === id) {
       res.clearCookie('authToken', {
         httpOnly: true,
-        sameSite: 'strict',
+        sameSite: 'lax',
         path: '/',
       });
     }

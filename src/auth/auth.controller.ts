@@ -44,7 +44,7 @@ export class AuthController {
 
     res.cookie('authToken', token, {
       httpOnly: true,
-      sameSite: 'strict',
+      sameSite: 'lax',
       secure: true,
       path: '/',
       maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -66,7 +66,7 @@ export class AuthController {
   async logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('authToken', {
       httpOnly: true,
-      sameSite: 'strict',
+      sameSite: 'lax',
       secure: true,
       path: '/',
     });
