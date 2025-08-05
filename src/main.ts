@@ -5,29 +5,24 @@ import { ValidationPipe } from '@nestjs/common';
 import { setupSwagger } from '../config/swagger.config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule)
-  app.setGlobalPrefix('api')
-  app.use(cookieParser())
+  const app = await NestFactory.create(AppModule);
+  app.setGlobalPrefix('api');
+  app.use(cookieParser());
 
-  const isProd = process.env.NODE_ENV === 'production'
   app.enableCors({
-    origin: isProd
-      ? [
-          'https://panel‑dreamdle.vercel.app',
-          'http://liara.picos.ifpi.edu.br',
-          'https://wordle-of-dreams-sandy.vercel.app',
-          'https://panel-dreamdle-avelar-rodrigues-de-sousas-projects.vercel.app'
-
-        ]
-      : [
-          'http://localhost:3000',
-          'http://localhost:3001',
-          'http://localhost:3002',
-        ],
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:3002',
+      'https://panel-dreamdle.vercel.app',
+      'http://liara.picos.ifpi.edu.br',
+      'https://wordle-of-dreams-sandy.vercel.app',
+      'https://panel-dreamdle-avelar-rodrigues-de-sousas-projects.vercel.app',
+    ],
     credentials: true,
-    allowedHeaders: ['Content-Type','Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     exposedHeaders: ['Authorization'],
-  })
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({

@@ -32,16 +32,14 @@ export class AuthController {
   ) {
     const { email, password } = dto;
     if (!email || !password) {
-      throw new UnauthorizedException('E‑mail e senha são obrigatórios');
+      throw new UnauthorizedException('E-mail e senha são obrigatórios');
     }
 
     const { token, user } = await this.authService.login(email, password);
 
-    const isProd = process.env.NODE_ENV === 'production';
     res.cookie('authToken', token, {
       httpOnly: true,
-      secure: isProd,
-      sameSite: 'strict',
+      sameSite: 'none',
       path: '/',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
@@ -62,11 +60,9 @@ export class AuthController {
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   async logout(@Res({ passthrough: true }) res: Response) {
-    const isProd = process.env.NODE_ENV === 'production';
     res.clearCookie('authToken', {
       httpOnly: true,
-      secure: isProd,
-      sameSite: 'strict',
+      sameSite: 'none',
       path: '/',
     });
     return { message: 'Logout efetuado com sucesso' };

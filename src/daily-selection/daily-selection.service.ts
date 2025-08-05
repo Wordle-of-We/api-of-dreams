@@ -8,7 +8,7 @@ export class DailySelectionService {
 
   constructor(private readonly prisma: PrismaService) { }
 
-  @Cron('* 13 * * *', { timeZone: 'America/Fortaleza' })
+  @Cron('12 10 * * *', { timeZone: 'America/Fortaleza' })
   async triggerGenerateRoute() {
     await this.handleDailyDraw();
   }
