@@ -192,4 +192,16 @@ export class DailySelectionService {
       orderBy: { id: 'desc' },
     });
   }
+
+  async getLatestByMode(modeId: number) {
+    return this.prisma.dailySelection.findFirst({
+      where: {
+        modeConfigId: modeId,
+        latest: true,
+      },
+      include: {
+        character: true,
+      },
+    });
+  }
 }

@@ -6,10 +6,14 @@ import {
   Query,
   InternalServerErrorException,
   NotFoundException,
+  UseGuards,
+  Param,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { DailySelectionService } from '../daily-selection/daily-selection.service';
 import { CreateDailySelectionDto } from '../daily-selection/dto/create-daily-selection.dto';
 import { Prisma } from '@prisma/client';
+import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 
 type DailySelectionWithRelations = Prisma.DailySelectionGetPayload<{
   include: { character: true; modeConfig: true };
@@ -43,6 +47,7 @@ export class DailySelectionController {
   }
 
   @Post('manual')
+  @UseGuards(JwtAuthGuard)
   async manualDraw(@Body() dto: CreateDailySelectionDto) {
     try {
       return await this.svc.manualDraw(dto.characterId, dto.modeConfigId);
@@ -66,5 +71,18 @@ export class DailySelectionController {
   @Get('all-today')
   async allTodayRaw(): Promise<DailySelectionWithRelations[]> {
     return this.svc.getAllTodayRaw();
+  }
+
+  @Get(':modeId')
+  async getSelectionByMode(@Param('modeId', ParseIntPipe) modeId: number) {
+    const selection = await this.svc.getLatestByMode(modeId);
+    if (!selection) {
+      throw new NotFoundException(`Seleção não encontrada para o modo ${modeId}`);
+    }
+
+    return {
+      modeConfigId: selection.modeConfigId,
+      character: selection.character,
+    };
   }
 }

@@ -61,4 +61,14 @@ export class PlaysController {
     const userId = req.user?.userId;
     return this.playsService.getDailyProgress(userId, modeConfigId);
   }
+
+  @Get(':playId/progress')
+  @UseGuards(OptionalAuthGuard)
+  async getPlayProgress(
+    @Req() req: RequestWithUser,
+    @Param('playId', ParseIntPipe) playId: number,
+  ) {
+    const userId = req.user?.userId;
+    return this.playsService.getProgressByPlayId(userId, playId);
+  }
 }

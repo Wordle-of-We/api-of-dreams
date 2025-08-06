@@ -4,9 +4,10 @@ import { DailySelectionController } from './daily-selection.controller';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { HttpModule } from '@nestjs/axios';
 import { PrismaService } from 'prisma/prisma.service';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
-  imports: [PrismaModule, HttpModule],
+  imports: [PrismaModule, HttpModule, AuthModule],
   providers: [DailySelectionService, PrismaService],
   controllers: [DailySelectionController],
 })
