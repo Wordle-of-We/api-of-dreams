@@ -17,15 +17,15 @@ type DailySelectionWithRelations = Prisma.DailySelectionGetPayload<{
 
 @Controller('daily-selection')
 export class DailySelectionController {
-  constructor(private readonly svc: DailySelectionService) { }
+  constructor(private readonly svc: DailySelectionService) {}
 
   @Get()
   async findToday(
     @Query('modeId') modeId?: string
   ): Promise<Record<string, { modeConfigId: number; character: DailySelectionWithRelations['character'] }>> {
-    const id = modeId ? parseInt(modeId, 10) : undefined;
+    const id = modeId && !isNaN(+modeId) ? parseInt(modeId, 10) : undefined;
 
-    const selections = (await this.svc.getTodayLatestSelections(id)) as DailySelectionWithRelations[];
+    const selections = await this.svc.getTodayLatestSelections(id);
 
     const result: Record<
       string,
@@ -40,14 +40,6 @@ export class DailySelectionController {
     }
 
     return result;
-  }
-
-  @Get('latest')
-  async findAllToday(
-    @Query('modeId') modeId?: string
-  ): Promise<DailySelectionWithRelations[]> {
-    const id = modeId ? parseInt(modeId, 10) : undefined;
-    return this.svc.getTodayLatestSelections(id);
   }
 
   @Post()
@@ -77,11 +69,11 @@ export class DailySelectionController {
     }
   }
 
-  @Get('manual/latest')
-  async manualLatest(
+  @Get('latest')
+  async getLatest(
     @Query('modeId') modeId?: string
   ): Promise<DailySelectionWithRelations[]> {
-    const id = modeId ? parseInt(modeId, 10) : undefined;
+    const id = modeId && !isNaN(+modeId) ? parseInt(modeId, 10) : undefined;
     return this.svc.getTodayLatestSelections(id);
   }
 
