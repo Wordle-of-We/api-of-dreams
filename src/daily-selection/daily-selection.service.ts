@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -8,7 +8,7 @@ export class DailySelectionService {
 
   constructor(private readonly prisma: PrismaService) { }
 
-  @Cron('12 10 * * *', { timeZone: 'America/Fortaleza' })
+  @Cron('10 20 * * *', { timeZone: 'America/Fortaleza' })
   async triggerGenerateRoute() {
     await this.handleDailyDraw();
   }
@@ -110,13 +110,58 @@ export class DailySelectionService {
   async getTodaySelection(modeId?: number) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
     const where: any = { date: today };
-    if (modeId) where.modeConfigId = modeId;
-    
+    if (modeId !== undefined) {
+      where.modeConfigId = modeId;
+    }
+
     return this.prisma.dailySelection.findMany({
       where,
       include: { character: true, modeConfig: true },
     });
   }
 
+  async manualDraw(characterId: number, modeConfigId: number) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const [ch, mode] = await Promise.all([
+      this.prisma.character.findUnique({ where: { id: characterId } }),
+      this.prisma.modeConfig.findUnique({ where: { id: modeConfigId } }),
+    ]);
+    if (!ch || !mode) {
+      throw new NotFoundException('Character ou ModeConfig não encontrados.');
+    }
+
+    const selection = await this.prisma.dailySelection.create({
+      data: {
+        date: today,
+        character: { connect: { id: characterId } },
+        modeConfig: { connect: { id: modeConfigId } },
+      },
+    });
+
+    return selection;
+  }
+
+  async getTodayLatestSelections(modeId?: number) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const raw = await this.prisma.dailySelection.findMany({
+      where: {
+        date: today,
+        ...(modeId !== undefined ? { modeConfigId: modeId } : {}),
+      },
+      include: { character: true, modeConfig: true },
+      orderBy: { id: 'asc' },
+    });
+
+    const latestByMode = new Map<number, typeof raw[0]>();
+    for (const sel of raw) {
+      latestByMode.set(sel.modeConfigId, sel);
+    }
+
+    return Array.from(latestByMode.values());
+  }
 }

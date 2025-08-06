@@ -28,31 +28,34 @@ export class PlaysService {
   ) { }
 
   async startPlay(userId: number | undefined, modeConfigId: number) {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     if (userId) {
       const existing = await this.prisma.play.findFirst({
         where: { userId, modeConfigId, createdAt: { gte: today } },
-      })
+      });
       if (existing) {
         return {
           playId: existing.id,
           completed: existing.completed,
           attemptsCount: existing.attemptsCount,
-        }
+        };
       }
     }
 
-    const guestId = userId ? null : uuidv4()
     const sel = await this.prisma.dailySelection.findFirst({
-      where: { modeConfigId },
-      orderBy: { date: 'desc' },
-    })
+      where: {
+        modeConfigId,
+        date: today,
+      },
+      orderBy: { id: 'desc' },
+    });
     if (!sel) {
-      throw new NotFoundException('Nenhum personagem selecionado hoje')
+      throw new NotFoundException('Nenhum personagem selecionado hoje');
     }
 
+    const guestId = userId ? null : uuidv4();
     const play = await this.prisma.play.create({
       data: {
         userId: userId ?? undefined,
@@ -60,16 +63,16 @@ export class PlaysService {
         modeConfigId,
         characterId: sel.characterId,
       },
-    })
+    });
 
-    await this.statsSnapshot.syncDay()
+    await this.statsSnapshot.syncDay();
 
     const base = {
       playId: play.id,
       completed: false,
       attemptsCount: 0,
-    }
-    return userId ? base : { ...base, guestId }
+    };
+    return userId ? base : { ...base, guestId };
   }
 
   async makeGuess(

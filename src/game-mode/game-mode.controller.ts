@@ -15,6 +15,14 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 export class GameModeController {
   constructor(private readonly service: GameModeService) {}
 
+  @Post('initialize')
+  @UseGuards(JwtAuthGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  initialize() {
+    return this.service.initializeDefaults();
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard)
   @Roles(Role.ADMIN)
