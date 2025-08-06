@@ -42,22 +42,8 @@ export class DailySelectionController {
     return result;
   }
 
-  @Post()
-  async createDailySelection(
-    @Body() dto: CreateDailySelectionDto
-  ) {
-    try {
-      return await this.svc.createManualSelection(dto);
-    } catch (error) {
-      console.error('[DailySelection] Erro ao criar manualmente:', error);
-      throw new InternalServerErrorException('Erro ao criar seleção do dia');
-    }
-  }
-
   @Post('manual')
-  async manualDraw(
-    @Body() dto: CreateDailySelectionDto
-  ) {
+  async manualDraw(@Body() dto: CreateDailySelectionDto) {
     try {
       return await this.svc.manualDraw(dto.characterId, dto.modeConfigId);
     } catch (error) {

@@ -32,16 +32,13 @@ export class DailySelectionService {
     const usedToday = new Set<number>();
 
     for (const modeConfig of modeConfigs) {
-      const exists = await this.prisma.dailySelection.findFirst({
-        where: {
-          date: today,
-          modeConfigId: modeConfig.id,
-        },
+      const existing = await this.prisma.dailySelection.findFirst({
+        where: { date: today, modeConfigId: modeConfig.id },
         orderBy: { id: 'desc' },
       });
 
-      if (exists) {
-        usedToday.add(exists.characterId);
+      if (existing) {
+        usedToday.add(existing.characterId);
         continue;
       }
 
@@ -68,20 +65,11 @@ export class DailySelectionService {
       }
 
       const skip = Math.floor(Math.random() * total);
-      const [character] = await this.prisma.character.findMany({
-        where,
-        skip,
-        take: 1,
-      });
+      const [character] = await this.prisma.character.findMany({ where, skip, take: 1 });
 
       await this.prisma.dailySelection.updateMany({
-        where: {
-          date: today,
-          modeConfigId: modeConfig.id,
-        },
-        data: {
-          latest: false,
-        },
+        where: { date: today, modeConfigId: modeConfig.id },
+        data: { latest: false },
       });
 
       await this.prisma.dailySelection.create({
@@ -108,7 +96,7 @@ export class DailySelectionService {
     ]);
 
     if (!character || !modeConfig) {
-      throw new Error('Character ou ModeConfig não encontrados.');
+      throw new NotFoundException('Character ou ModeConfig não encontrados.');
     }
 
     await this.prisma.dailySelection.updateMany({
@@ -154,7 +142,7 @@ export class DailySelectionService {
       },
     });
 
-    const selection = await this.prisma.dailySelection.create({
+    return this.prisma.dailySelection.create({
       data: {
         date: today,
         latest: true,
@@ -162,8 +150,6 @@ export class DailySelectionService {
         modeConfig: { connect: { id: modeConfigId } },
       },
     });
-
-    return selection;
   }
 
   async getTodaySelection(modeId?: number) {
@@ -199,6 +185,7 @@ export class DailySelectionService {
   async getAllTodayRaw(): Promise<DailySelectionWithRelations[]> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
     return this.prisma.dailySelection.findMany({
       where: { date: today },
       include: { character: true, modeConfig: true },

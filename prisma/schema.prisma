@@ -134,7 +134,7 @@ model DailySelection {
   modeConfigId Int
   character    Character  @relation(fields: [characterId], references: [id])
   characterId  Int
-  latest       Boolean    @default(false)
+  latest       Boolean    @default(true)
 }
 
 model AccessLog {
