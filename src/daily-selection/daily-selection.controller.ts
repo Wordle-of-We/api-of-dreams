@@ -48,8 +48,8 @@ export class DailySelectionController {
   }
 
   @Post('manual')
-  // @UseGuards(JwtAuthGuard)
-  // @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard)
+  @Roles(Role.ADMIN)
   async manualDraw(@Body() body: { modeConfigId: number }) {
     try {
       const { modeConfigId } = body;
