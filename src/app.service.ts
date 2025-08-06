@@ -9,7 +9,7 @@ export class AppService {
     return 'Hello World!';
   }
 
-  @Cron('*/14 * * * *')
+  @Cron('*/10 * * * *')
   logStatus() {
     this.logger.log('A API está funcionando');
   }

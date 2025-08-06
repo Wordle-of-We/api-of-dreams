@@ -28,8 +28,7 @@ export class PlaysController {
     @Req() req: RequestWithUser,
     @Body() dto: StartPlayDto,
   ) {
-    const userId = req.user?.userId;
-    return this.playsService.startPlay(userId, dto.modeConfigId);
+    return this.playsService.startPlay(req.user?.userId, dto.modeConfigId);
   }
 
   @Post(':playId/guess')
