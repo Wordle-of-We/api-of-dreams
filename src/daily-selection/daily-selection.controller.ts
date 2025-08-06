@@ -17,7 +17,7 @@ type DailySelectionWithRelations = Prisma.DailySelectionGetPayload<{
 
 @Controller('daily-selection')
 export class DailySelectionController {
-  constructor(private readonly svc: DailySelectionService) {}
+  constructor(private readonly svc: DailySelectionService) { }
 
   @Get()
   async findToday(
@@ -83,5 +83,10 @@ export class DailySelectionController {
   ): Promise<DailySelectionWithRelations[]> {
     const id = modeId ? parseInt(modeId, 10) : undefined;
     return this.svc.getTodayLatestSelections(id);
+  }
+
+  @Get('all-today')
+  async allTodayRaw(): Promise<DailySelectionWithRelations[]> {
+    return this.svc.getAllTodayRaw();
   }
 }
