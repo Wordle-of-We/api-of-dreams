@@ -11,7 +11,7 @@ type DailySelectionWithRelations = Prisma.DailySelectionGetPayload<{
 export class DailySelectionService {
   private readonly logger = new Logger(DailySelectionService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   @Cron('31 00 * * *', { timeZone: 'America/Fortaleza' })
   async triggerGenerateRoute() {
@@ -119,35 +119,57 @@ export class DailySelectionService {
     });
   }
 
-  async manualDraw(characterId: number, modeConfigId: number) {
+  async manualDraw(modeConfigId: number) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [ch, mode] = await Promise.all([
-      this.prisma.character.findUnique({ where: { id: characterId } }),
-      this.prisma.modeConfig.findUnique({ where: { id: modeConfigId } }),
-    ]);
+    const mode = await this.prisma.modeConfig.findUnique({ where: { id: modeConfigId } });
+    if (!mode) throw new NotFoundException('ModeConfig não encontrado.');
 
-    if (!ch || !mode) {
-      throw new NotFoundException('Character ou ModeConfig não encontrados.');
+    const existingToday = await this.prisma.dailySelection.findMany({
+      where: { date: today },
+    });
+    const usedIds = existingToday.map(sel => sel.characterId);
+
+    const where = {
+      AND: [
+        { id: { notIn: usedIds } },
+        {
+          NOT: {
+            dailySelections: {
+              some: {
+                modeConfigId,
+                date: { gte: new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000) }, // últimos 30 dias
+              },
+            },
+          },
+        },
+      ],
+    };
+
+    const total = await this.prisma.character.count({ where });
+    if (total === 0) {
+      throw new NotFoundException('Nenhum personagem disponível para sorteio.');
     }
 
+    const skip = Math.floor(Math.random() * total);
+    const [character] = await this.prisma.character.findMany({ where, skip, take: 1 });
+
     await this.prisma.dailySelection.updateMany({
-      where: {
-        date: today,
-        modeConfigId,
-      },
-      data: {
-        latest: false,
-      },
+      where: { date: today, modeConfigId },
+      data: { latest: false },
     });
 
     return this.prisma.dailySelection.create({
       data: {
         date: today,
         latest: true,
-        character: { connect: { id: characterId } },
+        character: { connect: { id: character.id } },
         modeConfig: { connect: { id: modeConfigId } },
+      },
+      include: {
+        character: true,
+        modeConfig: true,
       },
     });
   }

@@ -12,8 +12,9 @@ import {
 } from '@nestjs/common';
 import { DailySelectionService } from '../daily-selection/daily-selection.service';
 import { CreateDailySelectionDto } from '../daily-selection/dto/create-daily-selection.dto';
-import { Prisma } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
 
 type DailySelectionWithRelations = Prisma.DailySelectionGetPayload<{
   include: { character: true; modeConfig: true };
@@ -47,10 +48,12 @@ export class DailySelectionController {
   }
 
   @Post('manual')
-  @UseGuards(JwtAuthGuard)
-  async manualDraw(@Body() dto: CreateDailySelectionDto) {
+  // @UseGuards(JwtAuthGuard)
+  // @Roles(Role.ADMIN)
+  async manualDraw(@Body() body: { modeConfigId: number }) {
     try {
-      return await this.svc.manualDraw(dto.characterId, dto.modeConfigId);
+      const { modeConfigId } = body;
+      return await this.svc.manualDraw(modeConfigId);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
