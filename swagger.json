@@ -10,7 +10,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateAuthDto"
+                "$ref": "#/components/schemas/LoginDto"
               }
             }
           }
@@ -21,45 +21,7 @@
           }
         },
         "tags": [
-          "Autenticação"
-        ]
-      }
-    },
-    "/auth/profile": {
-      "get": {
-        "operationId": "AuthController_getProfile",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "Autenticação"
-        ]
-      }
-    },
-    "/auth/logout": {
-      "post": {
-        "operationId": "AuthController_logout",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "Autenticação"
+          "Auth"
         ]
       }
     },
@@ -834,228 +796,6 @@
         ]
       }
     },
-    "/attempts": {
-      "post": {
-        "operationId": "AttemptsController_create",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateAttemptDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Attempts"
-        ]
-      },
-      "get": {
-        "operationId": "AttemptsController_findAll",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Attempts"
-        ]
-      }
-    },
-    "/attempts/{id}": {
-      "get": {
-        "operationId": "AttemptsController_findOne",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Attempts"
-        ]
-      },
-      "patch": {
-        "operationId": "AttemptsController_update",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateAttemptDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Attempts"
-        ]
-      },
-      "delete": {
-        "operationId": "AttemptsController_remove",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Attempts"
-        ]
-      }
-    },
-    "/access-logs": {
-      "post": {
-        "operationId": "AccessLogsController_create",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateAccessLogDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "AccessLogs"
-        ]
-      },
-      "get": {
-        "operationId": "AccessLogsController_findAll",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "AccessLogs"
-        ]
-      }
-    },
-    "/access-logs/{id}": {
-      "get": {
-        "operationId": "AccessLogsController_findOne",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "AccessLogs"
-        ]
-      },
-      "patch": {
-        "operationId": "AccessLogsController_update",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateAccessLogDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "AccessLogs"
-        ]
-      },
-      "delete": {
-        "operationId": "AccessLogsController_remove",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "AccessLogs"
-        ]
-      }
-    },
     "/game-mode/initialize": {
       "post": {
         "operationId": "GameModeController_initialize",
@@ -1233,16 +973,16 @@
       }
     },
     "schemas": {
-      "CreateAuthDto": {
+      "LoginDto": {
         "type": "object",
         "properties": {
           "email": {
             "type": "string",
-            "example": "johndoe@example.com"
+            "example": "admin@example.com"
           },
           "password": {
             "type": "string",
-            "example": "password123"
+            "example": "senha123"
           }
         },
         "required": [
@@ -1436,22 +1176,6 @@
         "properties": {}
       },
       "GuessDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "CreateAttemptDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "UpdateAttemptDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "CreateAccessLogDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "UpdateAccessLogDto": {
         "type": "object",
         "properties": {}
       },

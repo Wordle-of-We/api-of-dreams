@@ -10,6 +10,11 @@ import { PlaysModule } from './plays/plays.module';
 import { StatsModule } from './stats/stats.module';
 import { GameModeModule } from './game-mode/game-mode.module';
 import { AdminModule } from './admin/admin.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
+import { AuthService } from './auth/auth.service';
+import { JwtStrategy } from './auth/strategy/jwt.strategy';
+import { AuthController } from './auth/auth.controller';
 
 @Module({
   imports: [
@@ -24,6 +29,17 @@ import { AdminModule } from './admin/admin.module';
     StatsModule,
     GameModeModule,
     AdminModule,
+    ConfigModule.forRoot({ isGlobal: true }),
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: (cs: ConfigService) => ({
+        secret: cs.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '1h' },
+      }),
+      inject: [ConfigService],
+    }),
   ],
+  providers: [AuthService, JwtStrategy],
+  controllers: [AuthController],
 })
 export class AppModule { }
