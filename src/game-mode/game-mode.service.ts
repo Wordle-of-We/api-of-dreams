@@ -3,10 +3,11 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ModeConfig } from '@prisma/client';
 import { CreateGameModeDto } from './dto/create-game-mode.dto';
 import { UpdateGameModeDto } from './dto/update-game-mode.dto';
+import { DailySelectionService } from '../daily-selection/daily-selection.service'; 
 
 @Injectable()
 export class GameModeService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly dailySelection: DailySelectionService, ) {}
 
   async create(dto: CreateGameModeDto): Promise<ModeConfig> {
     return this.prisma.modeConfig.create({
@@ -63,16 +64,17 @@ export class GameModeService {
 
     const result: ModeConfig[] = [];
     for (const mode of defaults) {
-      const existing = await this.prisma.modeConfig.findUnique({ where: { name: mode.name } });
-      if (existing) {
-        result.push(existing);
-      } else {
-        const created = await this.prisma.modeConfig.create({
+      let mc = await this.prisma.modeConfig.findUnique({ where: { name: mode.name } });
+      if (!mc) {
+        mc = await this.prisma.modeConfig.create({
           data: { ...mode, isActive: true },
         });
-        result.push(created);
       }
+      result.push(mc);
     }
+
+    await this.dailySelection.handleDailyDraw();
+
     return result;
   }
 }
