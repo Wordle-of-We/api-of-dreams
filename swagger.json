@@ -116,16 +116,34 @@
       "post": {
         "operationId": "AuthController_login",
         "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginDto"
-              }
-            }
+        "responses": {
+          "201": {
+            "description": ""
           }
         },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/profile": {
+      "get": {
+        "operationId": "AuthController_getProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
         "responses": {
           "201": {
             "description": ""
@@ -1002,23 +1020,6 @@
             "description": "Nova senha do usuário (mínimo 6 caracteres)"
           }
         }
-      },
-      "LoginDto": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string",
-            "example": "admin@example.com"
-          },
-          "password": {
-            "type": "string",
-            "example": "senha123"
-          }
-        },
-        "required": [
-          "email",
-          "password"
-        ]
       },
       "CreateCharacterDto": {
         "type": "object",
