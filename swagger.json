@@ -1,30 +1,6 @@
 {
   "openapi": "3.0.0",
   "paths": {
-    "/auth/login": {
-      "post": {
-        "operationId": "AuthController_login",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Auth"
-        ]
-      }
-    },
     "/users": {
       "post": {
         "operationId": "UsersController_create",
@@ -133,6 +109,30 @@
         },
         "tags": [
           "Users"
+        ]
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
         ]
       }
     },
@@ -973,23 +973,6 @@
       }
     },
     "schemas": {
-      "LoginDto": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string",
-            "example": "admin@example.com"
-          },
-          "password": {
-            "type": "string",
-            "example": "senha123"
-          }
-        },
-        "required": [
-          "email",
-          "password"
-        ]
-      },
       "CreateUserDto": {
         "type": "object",
         "properties": {
@@ -1019,6 +1002,23 @@
             "description": "Nova senha do usuário (mínimo 6 caracteres)"
           }
         }
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "admin@example.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "senha123"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
       },
       "CreateCharacterDto": {
         "type": "object",

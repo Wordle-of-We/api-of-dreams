@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../../users/users.service';
 
 export interface JwtPayload {
-  sub: string;
+  sub: number;
   email: string;
 }
 
@@ -23,9 +23,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    const userId = parseInt(payload.sub, 10);
-    const user = await this.usersService.findOne(userId);
+    const user = await this.usersService.findOne(payload.sub);
     if (!user) throw new UnauthorizedException('Usuário não encontrado');
-    return { userId, email: payload.email, role: user.role };
+    return { userId: payload.sub, email: payload.email, role: user.role };
   }
 }
