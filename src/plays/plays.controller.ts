@@ -11,7 +11,6 @@ import {
 import { GuessResult, PlaysService } from './plays.service';
 import { StartPlayDto } from './dto/start-play.dto';
 import { GuessDto } from './dto/create-play.dto';
-import { OptionalAuthGuard } from '../auth/guard/optional-auth.guard';
 import type { Request } from 'express';
 
 interface RequestWithUser extends Request {
@@ -23,7 +22,6 @@ export class PlaysController {
   constructor(private readonly playsService: PlaysService) { }
 
   @Post('start')
-  @UseGuards(OptionalAuthGuard)
   async start(
     @Req() req: RequestWithUser,
     @Body() dto: StartPlayDto,
@@ -32,7 +30,6 @@ export class PlaysController {
   }
 
   @Post(':playId/guess')
-  @UseGuards(OptionalAuthGuard)
   async guess(
     @Req() req: RequestWithUser,
     @Param('playId', ParseIntPipe) playId: number,
@@ -43,7 +40,6 @@ export class PlaysController {
   }
 
   @Get(':playId/attempts')
-  @UseGuards(OptionalAuthGuard)
   async listAttempts(
     @Req() req: RequestWithUser,
     @Param('playId', ParseIntPipe) playId: number,
@@ -53,7 +49,6 @@ export class PlaysController {
   }
 
   @Get('progress/:modeConfigId')
-  @UseGuards(OptionalAuthGuard)
   async getProgress(
     @Req() req: RequestWithUser,
     @Param('modeConfigId', ParseIntPipe) modeConfigId: number,
@@ -63,7 +58,6 @@ export class PlaysController {
   }
 
   @Get(':playId/progress')
-  @UseGuards(OptionalAuthGuard)
   async getPlayProgress(
     @Req() req: RequestWithUser,
     @Param('playId', ParseIntPipe) playId: number,
