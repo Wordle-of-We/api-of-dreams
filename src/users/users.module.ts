@@ -1,7 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule }   from '../../prisma/prisma.module';
 import { AuthModule }     from '../auth/auth.module';
-import { StatsModule }    from '../stats/stats.module';
 import { UsersService }   from './users.service';
 import { UsersController } from './users.controller';
 
@@ -9,7 +8,6 @@ import { UsersController } from './users.controller';
   imports: [
     PrismaModule,
     forwardRef(() => AuthModule),
-    forwardRef(() => StatsModule),
   ],
   providers: [UsersService],
   controllers: [UsersController],
