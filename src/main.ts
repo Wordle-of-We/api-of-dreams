@@ -43,7 +43,7 @@ async function bootstrap() {
   );
   SwaggerModule.setup('api/docs', app, swaggerDocument);
 
-  const port = parseInt(process.env.PORT ?? '3000', 10);
+  const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`🚀 Server rodando em http://localhost:${port}`);
   console.log(`📚 Docs disponíveis em http://localhost:${port}/api/docs`);
