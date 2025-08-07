@@ -21,8 +21,6 @@ async function bootstrap() {
       'https://wordle-of-dreams-avelar-rodrigues-de-sousas-projects.vercel.app'
     ],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    exposedHeaders: ['Authorization'],
   });
 
   app.useGlobalPipes(
