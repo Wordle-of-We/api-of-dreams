@@ -1,0 +1,1497 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAuthDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Autenticação"
+        ]
+      }
+    },
+    "/auth/profile": {
+      "get": {
+        "operationId": "AuthController_getProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Autenticação"
+        ]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Autenticação"
+        ]
+      }
+    },
+    "/users": {
+      "post": {
+        "operationId": "UsersController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      },
+      "get": {
+        "operationId": "UsersController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "operationId": "UsersController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      },
+      "patch": {
+        "operationId": "UsersController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      },
+      "delete": {
+        "operationId": "UsersController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/stats/overview": {
+      "get": {
+        "operationId": "StatsController_overview",
+        "parameters": [
+          {
+            "name": "date",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Stats"
+        ]
+      }
+    },
+    "/stats/mode/{modeId}": {
+      "get": {
+        "operationId": "StatsController_modeStats",
+        "parameters": [
+          {
+            "name": "modeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "date",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Stats"
+        ]
+      }
+    },
+    "/stats/play/{playId}": {
+      "get": {
+        "operationId": "StatsController_playStats",
+        "parameters": [
+          {
+            "name": "playId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Stats"
+        ]
+      }
+    },
+    "/characters": {
+      "post": {
+        "operationId": "CharactersController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCharacterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "characters"
+        ]
+      },
+      "get": {
+        "operationId": "CharactersController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "characters"
+        ]
+      }
+    },
+    "/characters/{id}": {
+      "get": {
+        "operationId": "CharactersController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "characters"
+        ]
+      },
+      "patch": {
+        "operationId": "CharactersController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCharacterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "characters"
+        ]
+      },
+      "delete": {
+        "operationId": "CharactersController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "characters"
+        ]
+      }
+    },
+    "/characters/{id}/image": {
+      "patch": {
+        "operationId": "CharactersController_updateImage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "characters"
+        ]
+      },
+      "delete": {
+        "operationId": "CharactersController_deleteImage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "characters"
+        ]
+      }
+    },
+    "/franchises": {
+      "post": {
+        "operationId": "FranchisesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFranchiseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "franchises"
+        ]
+      },
+      "get": {
+        "operationId": "FranchisesController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "franchises"
+        ]
+      }
+    },
+    "/franchises/{id}": {
+      "get": {
+        "operationId": "FranchisesController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "franchises"
+        ]
+      },
+      "patch": {
+        "operationId": "FranchisesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFranchiseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "franchises"
+        ]
+      },
+      "delete": {
+        "operationId": "FranchisesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "franchises"
+        ]
+      }
+    },
+    "/franchises/{id}/image": {
+      "patch": {
+        "operationId": "FranchisesController_updateImage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "franchises"
+        ]
+      },
+      "delete": {
+        "operationId": "FranchisesController_deleteImage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "franchises"
+        ]
+      }
+    },
+    "/daily-selection": {
+      "get": {
+        "operationId": "DailySelectionController_findToday",
+        "parameters": [
+          {
+            "name": "modeId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DailySelection"
+        ]
+      }
+    },
+    "/daily-selection/manual": {
+      "post": {
+        "operationId": "DailySelectionController_manualDraw",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DailySelection"
+        ]
+      }
+    },
+    "/daily-selection/latest": {
+      "get": {
+        "operationId": "DailySelectionController_getLatest",
+        "parameters": [
+          {
+            "name": "modeId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DailySelection"
+        ]
+      }
+    },
+    "/daily-selection/all-today": {
+      "get": {
+        "operationId": "DailySelectionController_allTodayRaw",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DailySelection"
+        ]
+      }
+    },
+    "/daily-selection/{modeId}": {
+      "get": {
+        "operationId": "DailySelectionController_getSelectionByMode",
+        "parameters": [
+          {
+            "name": "modeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DailySelection"
+        ]
+      }
+    },
+    "/plays/start": {
+      "post": {
+        "operationId": "PlaysController_start",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartPlayDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Plays"
+        ]
+      }
+    },
+    "/plays/{playId}/guess": {
+      "post": {
+        "operationId": "PlaysController_guess",
+        "parameters": [
+          {
+            "name": "playId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuessDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Plays"
+        ]
+      }
+    },
+    "/plays/{playId}/attempts": {
+      "get": {
+        "operationId": "PlaysController_listAttempts",
+        "parameters": [
+          {
+            "name": "playId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Plays"
+        ]
+      }
+    },
+    "/plays/progress/{modeConfigId}": {
+      "get": {
+        "operationId": "PlaysController_getProgress",
+        "parameters": [
+          {
+            "name": "modeConfigId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Plays"
+        ]
+      }
+    },
+    "/plays/{playId}/progress": {
+      "get": {
+        "operationId": "PlaysController_getPlayProgress",
+        "parameters": [
+          {
+            "name": "playId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Plays"
+        ]
+      }
+    },
+    "/attempts": {
+      "post": {
+        "operationId": "AttemptsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAttemptDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Attempts"
+        ]
+      },
+      "get": {
+        "operationId": "AttemptsController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Attempts"
+        ]
+      }
+    },
+    "/attempts/{id}": {
+      "get": {
+        "operationId": "AttemptsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Attempts"
+        ]
+      },
+      "patch": {
+        "operationId": "AttemptsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAttemptDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Attempts"
+        ]
+      },
+      "delete": {
+        "operationId": "AttemptsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Attempts"
+        ]
+      }
+    },
+    "/access-logs": {
+      "post": {
+        "operationId": "AccessLogsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAccessLogDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "AccessLogs"
+        ]
+      },
+      "get": {
+        "operationId": "AccessLogsController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "AccessLogs"
+        ]
+      }
+    },
+    "/access-logs/{id}": {
+      "get": {
+        "operationId": "AccessLogsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "AccessLogs"
+        ]
+      },
+      "patch": {
+        "operationId": "AccessLogsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAccessLogDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "AccessLogs"
+        ]
+      },
+      "delete": {
+        "operationId": "AccessLogsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "AccessLogs"
+        ]
+      }
+    },
+    "/game-mode/initialize": {
+      "post": {
+        "operationId": "GameModeController_initialize",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "game-mode"
+        ]
+      }
+    },
+    "/game-mode": {
+      "post": {
+        "operationId": "GameModeController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGameModeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "game-mode"
+        ]
+      },
+      "get": {
+        "operationId": "GameModeController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "game-mode"
+        ]
+      }
+    },
+    "/game-mode/{id}": {
+      "get": {
+        "operationId": "GameModeController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "game-mode"
+        ]
+      },
+      "patch": {
+        "operationId": "GameModeController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGameModeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "game-mode"
+        ]
+      },
+      "delete": {
+        "operationId": "GameModeController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "game-mode"
+        ]
+      }
+    },
+    "/admin/dashboard/kpis": {
+      "get": {
+        "operationId": "AdminController_kpis",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "API of Dreams",
+    "description": "Documentação da API of Dreams",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "CreateAuthDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "johndoe@example.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "password123"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "CreateUserDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "E-mail único do usuário"
+          },
+          "password": {
+            "type": "string",
+            "description": "Senha do usuário (mínimo 6 caracteres)"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "E-mail único do usuário"
+          },
+          "password": {
+            "type": "string",
+            "description": "Nova senha do usuário (mínimo 6 caracteres)"
+          }
+        }
+      },
+      "CreateCharacterDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "emojis": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "MALE",
+              "FEMALE",
+              "OTHER"
+            ]
+          },
+          "race": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ethnicity": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "hair": {
+            "type": "string"
+          },
+          "aliveStatus": {
+            "type": "string",
+            "enum": [
+              "ALIVE",
+              "DEAD"
+            ]
+          },
+          "franchiseIds": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "imageUrl1": {
+            "type": "string"
+          },
+          "imageUrl2": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "gender",
+          "hair",
+          "aliveStatus"
+        ]
+      },
+      "UpdateCharacterDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "emojis": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "MALE",
+              "FEMALE",
+              "OTHER"
+            ]
+          },
+          "race": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ethnicity": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "hair": {
+            "type": "string"
+          },
+          "aliveStatus": {
+            "type": "string",
+            "enum": [
+              "ALIVE",
+              "DEAD"
+            ]
+          },
+          "franchiseIds": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "imageUrl1": {
+            "type": "string"
+          },
+          "imageUrl2": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateFranchiseDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "URL pública da capa (opcional)."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateFranchiseDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "URL pública da capa (opcional)."
+          }
+        }
+      },
+      "StartPlayDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "GuessDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateAttemptDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateAttemptDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateAccessLogDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateAccessLogDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateGameModeDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "CHARACTERISTICS"
+          },
+          "description": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "isActive"
+        ]
+      },
+      "UpdateGameModeDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "CHARACTERISTICS"
+          },
+          "description": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      }
+    }
+  }
+}

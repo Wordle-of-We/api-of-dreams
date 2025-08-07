@@ -2,7 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import { ValidationPipe } from '@nestjs/common';
-import { setupSwagger } from '../config/swagger.config';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { writeFileSync } from 'fs';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -31,7 +32,19 @@ async function bootstrap() {
     }),
   );
 
-  setupSwagger(app);
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('API of Dreams')
+    .setDescription('Documentação da API of Dreams')
+    .setVersion('1.0')
+    .addBearerAuth() 
+    .build();
+
+  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  writeFileSync(
+    process.cwd() + '/swagger.json',
+    JSON.stringify(swaggerDocument, null, 2),
+  );
+  SwaggerModule.setup('api/docs', app, swaggerDocument);
 
   const port = parseInt(process.env.PORT ?? '3000', 10);
   await app.listen(port);

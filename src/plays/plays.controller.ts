@@ -23,7 +23,7 @@ export class PlaysController {
   constructor(private readonly playsService: PlaysService) { }
 
   @Post('start')
-  // @UseGuards(OptionalAuthGuard)
+  @UseGuards(OptionalAuthGuard)
   async start(
     @Req() req: RequestWithUser,
     @Body() dto: StartPlayDto,
@@ -32,7 +32,7 @@ export class PlaysController {
   }
 
   @Post(':playId/guess')
-  // @UseGuards(OptionalAuthGuard)
+  @UseGuards(OptionalAuthGuard)
   async guess(
     @Req() req: RequestWithUser,
     @Param('playId', ParseIntPipe) playId: number,
@@ -43,7 +43,7 @@ export class PlaysController {
   }
 
   @Get(':playId/attempts')
-  // @UseGuards(OptionalAuthGuard)
+  @UseGuards(OptionalAuthGuard)
   async listAttempts(
     @Req() req: RequestWithUser,
     @Param('playId', ParseIntPipe) playId: number,
@@ -53,7 +53,7 @@ export class PlaysController {
   }
 
   @Get('progress/:modeConfigId')
-  // @UseGuards(OptionalAuthGuard)
+  @UseGuards(OptionalAuthGuard)
   async getProgress(
     @Req() req: RequestWithUser,
     @Param('modeConfigId', ParseIntPipe) modeConfigId: number,
@@ -63,7 +63,7 @@ export class PlaysController {
   }
 
   @Get(':playId/progress')
-  // @UseGuards(OptionalAuthGuard)
+  @UseGuards(OptionalAuthGuard)
   async getPlayProgress(
     @Req() req: RequestWithUser,
     @Param('playId', ParseIntPipe) playId: number,
