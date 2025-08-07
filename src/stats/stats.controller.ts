@@ -3,8 +3,8 @@ import { StatsService } from './stats.service';
 import { OverviewStatsDto } from './dto/overview-stats.dto';
 import { ModeStatsDto } from './dto/mode-stats.dto';
 import { PlayStatsDto } from './dto/play-stats.dto';
-import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
-import { Roles } from 'common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../src/auth/guard/jwt-auth.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 
 @UseGuards(JwtAuthGuard)
