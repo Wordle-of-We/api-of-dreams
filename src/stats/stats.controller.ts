@@ -1,17 +1,17 @@
 import { Controller, Get, Param, Query, ParseIntPipe, UseGuards } from '@nestjs/common';
-import { StatsService }     from './stats.service';
+import { StatsService } from './stats.service';
 import { OverviewStatsDto } from './dto/overview-stats.dto';
-import { ModeStatsDto }     from './dto/mode-stats.dto';
-import { PlayStatsDto }     from './dto/play-stats.dto';
-import { JwtAuthGuard }     from 'src/auth/guard/jwt-auth.guard';
-import { Roles }            from 'src/common/decorators/roles.decorator';
-import { Role }             from '@prisma/client';
+import { ModeStatsDto } from './dto/mode-stats.dto';
+import { PlayStatsDto } from './dto/play-stats.dto';
+import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
+import { Roles } from 'common/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @UseGuards(JwtAuthGuard)
 @Roles(Role.ADMIN)
 @Controller('stats')
 export class StatsController {
-  constructor(private readonly svc: StatsService) {}
+  constructor(private readonly svc: StatsService) { }
 
   @Get('overview')
   overview(@Query('date') date?: string): Promise<OverviewStatsDto> {

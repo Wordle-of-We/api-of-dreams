@@ -1,17 +1,21 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  UseGuards,
+} from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { KPI } from './dto/kpi.dto';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
-import { Roles } from '../common/decorators/roles.decorator';
-import { Role } from '@prisma/client';
+import { RolesGuard } from '../auth/guard/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 
-@UseGuards(JwtAuthGuard)
-@Roles(Role.ADMIN)
 @Controller('admin/dashboard')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class AdminController {
-  constructor(private readonly svc: AdminService) { }
+  constructor(private readonly svc: AdminService) {}
 
   @Get('kpis')
+  @Roles('ADMIN')
   kpis(): Promise<KPI> {
     return this.svc.getKPIs();
   }

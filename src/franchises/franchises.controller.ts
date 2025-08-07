@@ -17,7 +17,7 @@ import * as multer from 'multer';
 import { FranchisesService } from './franchises.service';
 import { CreateFranchiseDto } from './dto/create-franchise.dto';
 import { UpdateFranchiseDto } from './dto/update-franchise.dto';
-import { Roles } from '../common/decorators/roles.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';

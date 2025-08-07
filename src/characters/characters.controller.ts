@@ -9,7 +9,6 @@ import {
   UseGuards,
   UploadedFile,
   UseInterceptors,
-  BadRequestException,
   ParseIntPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -18,9 +17,10 @@ import * as multer from 'multer';
 import { CharactersService } from './characters.service';
 import { CreateCharacterDto } from './dto/create-character.dto';
 import { UpdateCharacterDto } from './dto/update-character.dto';
-import { Roles } from '../common/decorators/roles.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guard/roles.guard';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('characters')
@@ -29,7 +29,7 @@ export class CharactersController {
   constructor(private readonly service: CharactersService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @UseInterceptors(
@@ -53,7 +53,7 @@ export class CharactersController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   async update(
@@ -64,7 +64,7 @@ export class CharactersController {
   }
 
   @Patch(':id/image')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @UseInterceptors(
@@ -79,7 +79,7 @@ export class CharactersController {
   }
 
   @Delete(':id/image')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   async deleteImage(@Param('id', ParseIntPipe) id: number) {
@@ -87,7 +87,7 @@ export class CharactersController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   async remove(@Param('id', ParseIntPipe) id: number) {

@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { writeFileSync } from 'fs';
 
@@ -49,6 +49,7 @@ async function bootstrap() {
   await app.listen(port);
   console.log(`🚀 Server rodando em http://localhost:${port}`);
   console.log(`📚 Docs disponíveis em http://localhost:${port}/api/docs`);
+  Logger.log(`🚀 App running on http://localhost:${port}`, 'Bootstrap');
 }
 
 bootstrap();
