@@ -25,7 +25,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prepare": "husky install",
     "gen:types": "openapi-typescript ./swagger.json --output src/types/api.d.ts",
-    "prisma:seed": "ts-node prisma/seed.ts"
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.1",
