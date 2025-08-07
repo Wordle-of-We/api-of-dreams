@@ -12,8 +12,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { AuthGuard } from '@nestjs/passport';
-import { Roles } from '../common/decorators/roles.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -26,7 +25,7 @@ interface RequestWithUser extends Request {
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Post()
   async create(@Body() dto: CreateUserDto) {
