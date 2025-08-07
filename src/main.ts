@@ -18,6 +18,7 @@ async function bootstrap() {
       'http://liara.picos.ifpi.edu.br',
       'https://wordle-of-dreams-sandy.vercel.app',
       'https://panel-dreamdle-avelar-rodrigues-de-sousas-projects.vercel.app',
+      'https://wordle-of-dreams-avelar-rodrigues-de-sousas-projects.vercel.app'
     ],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
