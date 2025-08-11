@@ -7,46 +7,35 @@ import {
   Param,
   ParseIntPipe,
   UseGuards,
+  Headers,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { GuessResult, PlaysService } from './plays.service';
+import { PlaysService } from './plays.service';
 import { StartPlayDto } from './dto/start-play.dto';
 import { GuessDto } from './dto/create-play.dto';
 import { OptionalAuthGuard } from '../auth/guard/optional-auth.guard';
+
 interface RequestWithUser extends Request {
   user?: { userId: number; email?: string };
 }
 
 @Controller('plays')
 export class PlaysController {
-  constructor(private readonly playsService: PlaysService) { }
+  constructor(private readonly playsService: PlaysService) {}
 
   @Post('start')
   @UseGuards(OptionalAuthGuard)
   async start(
     @Req() req: RequestWithUser,
     @Body() dto: StartPlayDto,
+    @Headers('x-guest-id') guestId?: string,
   ) {
-    return this.playsService.startPlay(req.user?.userId, dto.modeConfigId, dto.date);
-  }
-
-  @Post(':playId/guess')
-  @UseGuards(OptionalAuthGuard)
-  async guess(
-    @Req() req: RequestWithUser,
-    @Param('playId', ParseIntPipe) playId: number,
-    @Body() dto: GuessDto,
-  ): Promise<GuessResult> {
-    return this.playsService.makeGuess(req.user?.userId, playId, dto.guess);
-  }
-
-  @Get(':playId/attempts')
-  @UseGuards(OptionalAuthGuard)
-  async listAttempts(
-    @Req() req: RequestWithUser,
-    @Param('playId', ParseIntPipe) playId: number,
-  ) {
-    return this.playsService.getAttemptsByPlay(req.user?.userId, playId);
+    return this.playsService.startPlay(
+      req.user?.userId,
+      dto.modeConfigId,
+      dto.date,
+      guestId,
+    );
   }
 
   @Get('progress/:modeConfigId')
@@ -54,8 +43,36 @@ export class PlaysController {
   async getProgress(
     @Req() req: RequestWithUser,
     @Param('modeConfigId', ParseIntPipe) modeConfigId: number,
+    @Headers('x-guest-id') guestId?: string,
   ) {
-    return this.playsService.getDailyProgress(req.user?.userId, modeConfigId);
+    return this.playsService.getDailyProgress(
+      req.user?.userId,
+      modeConfigId,
+      guestId,
+    );
+  }
+
+  // Opcional (recomendado): reforçar propriedade também em convidados
+  @Post(':playId/guess')
+  @UseGuards(OptionalAuthGuard)
+  async guess(
+    @Req() req: RequestWithUser,
+    @Param('playId', ParseIntPipe) playId: number,
+    @Body() dto: GuessDto,
+    @Headers('x-guest-id') guestId?: string,
+  ) {
+    // Se quiser validar guestId no service, adicione o parâmetro lá e passe aqui
+    return this.playsService.makeGuess(req.user?.userId, playId, dto.guess /*, guestId*/);
+  }
+
+  @Get(':playId/attempts')
+  @UseGuards(OptionalAuthGuard)
+  async listAttempts(
+    @Req() req: RequestWithUser,
+    @Param('playId', ParseIntPipe) playId: number,
+    @Headers('x-guest-id') guestId?: string,
+  ) {
+    return this.playsService.getAttemptsByPlay(req.user?.userId, playId /*, guestId*/);
   }
 
   @Get(':playId/progress')
@@ -63,7 +80,8 @@ export class PlaysController {
   async getPlayProgress(
     @Req() req: RequestWithUser,
     @Param('playId', ParseIntPipe) playId: number,
+    @Headers('x-guest-id') guestId?: string,
   ) {
-    return this.playsService.getProgressByPlayId(req.user?.userId, playId);
+    return this.playsService.getProgressByPlayId(req.user?.userId, playId /*, guestId*/);
   }
 }

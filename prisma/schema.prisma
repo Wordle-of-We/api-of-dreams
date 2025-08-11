@@ -122,7 +122,7 @@ model Play {
   createdAt     DateTime @default(now())
 
   completedAt   DateTime?
-  selectionDate DateTime?
+  selectionDate DateTime
 
   user       User?      @relation(fields: [userId], references: [id])
   modeConfig ModeConfig @relation(fields: [modeConfigId], references: [id])
@@ -131,6 +131,10 @@ model Play {
 
   @@index([modeConfigId, selectionDate])
   @@index([userId, modeConfigId, selectionDate])
+
+  @@unique([userId, modeConfigId, selectionDate], map: "user_day_mode_unique")
+
+  @@unique([guestId, modeConfigId, selectionDate], map: "guest_day_mode_unique")
 }
 
 model Attempt {

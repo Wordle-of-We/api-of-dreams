@@ -22,7 +22,7 @@ async function bootstrap() {
       'https://wordle-of-dreams-avelar-rodrigues-de-sousas-projects.vercel.app',
     ],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'X-Guest-Id'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     exposedHeaders: ['Authorization'],
     optionsSuccessStatus: 204,

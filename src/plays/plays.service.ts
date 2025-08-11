@@ -1,21 +1,26 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
-import { PrismaService } from '../../prisma/prisma.service'
-import { v4 as uuidv4 } from 'uuid'
-import { StatsSnapshotService } from '../stats/stats-snapshot.service'
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
+import { v4 as uuidv4 } from 'uuid';
+import { StatsSnapshotService } from '../stats/stats-snapshot.service';
 
 export interface Comparison<T> {
-  guessed: T
-  target: T
+  guessed: T;
+  target: T;
 }
 
 export interface GuessResult {
-  attemptNumber: number
-  guess: string
-  isCorrect: boolean
-  playCompleted: boolean
-  guessedImageUrl1: string | null
-  comparison: Record<string, Comparison<string> | Comparison<string[]>>
-  triedAt: Date
+  attemptNumber: number;
+  guess: string;
+  isCorrect: boolean;
+  playCompleted: boolean;
+  guessedImageUrl1: string | null;
+  comparison: Record<string, Comparison<string> | Comparison<string[]>>;
+  triedAt: Date;
 }
 
 @Injectable()
@@ -23,7 +28,7 @@ export class PlaysService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly statsSnapshot: StatsSnapshotService,
-  ) { }
+  ) {}
 
   private dayStartFromYYYYMMDD(date?: string): Date {
     if (!date) {
@@ -34,20 +39,80 @@ export class PlaysService {
     return new Date(`${date}T00:00:00-03:00`);
   }
 
+  private toStartResponse(full: any) {
+    return {
+      playId: full.id,
+      completed: full.completed,
+      attemptsCount: full.attemptsCount,
+      character: {
+        id: full.character.id,
+        name: full.character.name,
+        description: full.character.description,
+        imageUrl1: full.character.imageUrl1,
+        imageUrl2: full.character.imageUrl2,
+        emojis: full.character.emojis,
+      },
+      modeConfig: {
+        id: full.modeConfig.id,
+        name: full.modeConfig.name,
+        imageUseSecondImage: (full.modeConfig as any).imageUseSecondImage,
+        imageBlurStart: (full.modeConfig as any).imageBlurStart,
+        imageBlurStep: (full.modeConfig as any).imageBlurStep,
+        imageBlurMin: (full.modeConfig as any).imageBlurMin,
+      },
+    };
+  }
+
+  private buildComparison(mode: string, gss: any, tgt: any): GuessResult['comparison'] {
+    switch (mode) {
+      case 'Descrição':
+        return {
+          descrição: {
+            guessed: gss.description ?? '',
+            target: tgt.description ?? '',
+          },
+        };
+      case 'Emoji':
+      case 'Emojis':
+        return {
+          emojis: {
+            guessed: gss.emojis,
+            target: tgt.emojis,
+          },
+        };
+      case 'Imagem':
+        return {
+          imagem: {
+            guessed: gss.imageUrl2 ?? '',
+            target: tgt.imageUrl2 ?? '',
+          },
+        };
+      default:
+        return {
+          gênero: { guessed: gss.gender, target: tgt.gender },
+          raça: { guessed: gss.race, target: tgt.race },
+          etnia: { guessed: gss.ethnicity, target: tgt.ethnicity },
+          cabelo: { guessed: gss.hair, target: tgt.hair },
+          status: { guessed: gss.aliveStatus, target: tgt.aliveStatus },
+          franchises: {
+            guessed: gss.franchises?.map((cf: any) => cf.franchise.name) ?? [],
+            target: tgt.franchises?.map((cf: any) => cf.franchise.name) ?? [],
+          },
+        };
+    }
+  }
+
   async startPlay(
     userId: number | undefined,
     modeConfigId: number,
     date?: string,
+    guestId?: string,
   ) {
     const dayStart = this.dayStartFromYYYYMMDD(date);
 
     if (userId) {
       const existing = await this.prisma.play.findFirst({
-        where: {
-          userId,
-          modeConfigId,
-          selectionDate: dayStart,
-        },
+        where: { userId, modeConfigId, selectionDate: dayStart },
       });
       if (existing) {
         const full = await this.prisma.play.findUnique({
@@ -55,27 +120,15 @@ export class PlaysService {
           include: { character: true, modeConfig: true },
         });
         if (!full) throw new NotFoundException('Partida não encontrada');
-        return {
-          playId: full.id,
-          completed: full.completed,
-          attemptsCount: full.attemptsCount,
-          character: {
-            id: full.character.id,
-            name: full.character.name,
-            description: full.character.description,
-            imageUrl1: full.character.imageUrl1,
-            imageUrl2: full.character.imageUrl2,
-            emojis: full.character.emojis,
-          },
-          modeConfig: {
-            id: full.modeConfig.id,
-            name: full.modeConfig.name,
-            imageUseSecondImage: (full.modeConfig as any).imageUseSecondImage,
-            imageBlurStart: (full.modeConfig as any).imageBlurStart,
-            imageBlurStep: (full.modeConfig as any).imageBlurStep,
-            imageBlurMin: (full.modeConfig as any).imageBlurMin,
-          },
-        };
+        return this.toStartResponse(full);
+      }
+    } else if (guestId) {
+      const existingGuest = await this.prisma.play.findFirst({
+        where: { guestId, modeConfigId, selectionDate: dayStart },
+        include: { character: true, modeConfig: true },
+      });
+      if (existingGuest) {
+        return { ...this.toStartResponse(existingGuest), guestId };
       }
     }
 
@@ -86,42 +139,22 @@ export class PlaysService {
     });
     if (!sel) throw new NotFoundException('Nenhum personagem selecionado neste dia');
 
-    const guestId = userId ? null : uuidv4();
+    const finalGuestId = userId ? null : (guestId || uuidv4());
     const play = await this.prisma.play.create({
       data: {
         userId,
-        guestId,
+        guestId: finalGuestId,
         modeConfigId,
         characterId: sel.characterId,
         selectionDate: dayStart,
       },
+      include: { character: true, modeConfig: true },
     });
 
     await this.statsSnapshot.syncDay();
 
-    const base = {
-      playId: play.id,
-      completed: play.completed,
-      attemptsCount: play.attemptsCount,
-      character: {
-        id: sel.character.id,
-        name: sel.character.name,
-        description: sel.character.description,
-        imageUrl1: sel.character.imageUrl1,
-        imageUrl2: sel.character.imageUrl2,
-        emojis: sel.character.emojis,
-      },
-      modeConfig: {
-        id: sel.modeConfig.id,
-        name: sel.modeConfig.name,
-        imageUseSecondImage: (sel.modeConfig as any).imageUseSecondImage,
-        imageBlurStart: (sel.modeConfig as any).imageBlurStart,
-        imageBlurStep: (sel.modeConfig as any).imageBlurStep,
-        imageBlurMin: (sel.modeConfig as any).imageBlurMin,
-      },
-    };
-
-    return userId ? base : { ...base, guestId };
+    const base = this.toStartResponse(play);
+    return userId ? base : { ...base, guestId: finalGuestId! };
   }
 
   async makeGuess(
@@ -135,41 +168,47 @@ export class PlaysService {
         modeConfig: { select: { name: true } },
         character: { include: { franchises: { include: { franchise: true } } } },
       },
-    })
-    if (!play) throw new NotFoundException('Partida não encontrada')
-    if (play.completed) throw new BadRequestException('Partida já concluída')
+    });
+    if (!play) throw new NotFoundException('Partida não encontrada');
+    if (play.completed) throw new BadRequestException('Partida já concluída');
 
-    const mode = play.modeConfig.name
-    const target = play.character
+    if (play.userId != null && userId !== play.userId) {
+      throw new UnauthorizedException('Esta partida pertence a outro usuário.');
+    }
+
+    const mode = play.modeConfig.name;
+    const target = play.character;
     const ownerFilter = play.userId
       ? { userId: play.userId }
-      : { guestId: play.guestId! }
+      : { guestId: play.guestId! };
+
+    const trimmed = guess.trim();
 
     const already = await this.prisma.attempt.findFirst({
       where: {
         ...ownerFilter,
         modeConfigId: play.modeConfigId,
         playId: playId,
-        guess: guess.trim(),
+        guess: trimmed,
       },
-    })
+    });
     if (already) {
-      throw new BadRequestException('Você já chutou esse personagem nesta partida')
+      throw new BadRequestException('Você já chutou esse personagem nesta partida');
     }
 
     const guessed = await this.prisma.character.findUnique({
-      where: { name: guess.trim() },
+      where: { name: trimmed },
       include: { franchises: { include: { franchise: true } } },
-    })
+    });
     if (!guessed) {
-      throw new NotFoundException(`Personagem "${guess}" não encontrado`)
+      throw new NotFoundException(`Personagem "${guess}" não encontrado`);
     }
 
     const prevCount = await this.prisma.attempt.count({
       where: { ...ownerFilter, playId },
-    })
+    });
 
-    const isCorrect = guessed.id === target.id
+    const isCorrect = guessed.id === target.id;
 
     const attempt = await this.prisma.attempt.create({
       data: {
@@ -177,12 +216,12 @@ export class PlaysService {
         targetCharacterId: target.id,
         guessedCharacterId: guessed.id,
         modeConfigId: play.modeConfigId,
-        guess: guess.trim(),
+        guess: trimmed,
         isCorrect,
         playId,
         order: prevCount + 1,
       },
-    })
+    });
 
     await this.prisma.play.update({
       where: { id: playId },
@@ -190,63 +229,22 @@ export class PlaysService {
         attemptsCount: { increment: 1 },
         ...(isCorrect ? { completed: true, completedAt: new Date() } : {}),
       },
-    })
+    });
 
-    await this.statsSnapshot.syncDay()
+    await this.statsSnapshot.syncDay();
 
-    let comparison: GuessResult['comparison'] = {}
-    switch (mode) {
-      case 'Descrição':
-        comparison = {
-          descrição: {
-            guessed: guessed.description ?? '',
-            target: target.description ?? '',
-          },
-        }
-        break
-      case 'Emoji':
-      case 'Emojis':
-        comparison = {
-          emojis: {
-            guessed: guessed.emojis,
-            target: target.emojis,
-          },
-        }
-        break
-      case 'Imagem':
-        comparison = {
-          imagem: {
-            guessed: guessed.imageUrl2 ?? '',
-            target: target.imageUrl2 ?? '',
-          },
-        }
-        break
-      default:
-        comparison = {
-          gênero: { guessed: guessed.gender, target: target.gender },
-          raça: { guessed: guessed.race, target: target.race },
-          etnia: { guessed: guessed.ethnicity, target: target.ethnicity },
-          cabelo: { guessed: guessed.hair, target: target.hair },
-          status: { guessed: guessed.aliveStatus, target: target.aliveStatus },
-          franchises: {
-            guessed: guessed.franchises.map(cf => cf.franchise.name),
-            target: target.franchises.map(cf => cf.franchise.name),
-          },
-        }
-        break
-    }
+    const comparison = this.buildComparison(mode, guessed, target);
 
     return {
       attemptNumber: prevCount + 1,
       guess: attempt.guess,
       isCorrect,
       playCompleted: isCorrect,
-      // usa image 2 no modo Imagem
       guessedImageUrl1:
         mode === 'Imagem' ? (guessed.imageUrl2 ?? null) : (guessed.imageUrl1 ?? null),
       comparison,
       triedAt: attempt.createdAt,
-    }
+    };
   }
 
   async getAttemptsByPlay(
@@ -256,13 +254,17 @@ export class PlaysService {
     const play = await this.prisma.play.findUnique({
       where: { id: playId },
       include: { modeConfig: { select: { name: true } } },
-    })
-    if (!play) throw new NotFoundException('Partida não encontrada')
+    });
+    if (!play) throw new NotFoundException('Partida não encontrada');
 
-    const mode = play.modeConfig.name
+    if (play.userId != null && userId !== play.userId) {
+      throw new UnauthorizedException('Esta partida pertence a outro usuário.');
+    }
+
+    const mode = play.modeConfig.name;
     const ownerFilter = play.userId
       ? { userId: play.userId }
-      : { guestId: play.guestId! }
+      : { guestId: play.guestId! };
 
     const atts = await this.prisma.attempt.findMany({
       where: { ...ownerFilter, playId },
@@ -271,53 +273,12 @@ export class PlaysService {
         guessedCharacter: { include: { franchises: { include: { franchise: true } } } },
       },
       orderBy: { order: 'asc' },
-    })
+    });
 
     return atts.map((a, idx) => {
-      const tgt = a.targetCharacter
-      const gss = a.guessedCharacter!
-      let comparison: GuessResult['comparison'] = {}
-
-      switch (mode) {
-        case 'Descrição':
-          comparison = {
-            descrição: {
-              guessed: gss.description ?? '',
-              target: tgt.description ?? '',
-            },
-          }
-          break
-        case 'Emoji':
-        case 'Emojis':
-          comparison = {
-            emojis: {
-              guessed: gss.emojis,
-              target: tgt.emojis,
-            },
-          }
-          break
-        case 'Imagem':
-          comparison = {
-            imagem: {
-              guessed: gss.imageUrl2 ?? '',
-              target: tgt.imageUrl2 ?? '',
-            },
-          }
-          break
-        default:
-          comparison = {
-            gênero: { guessed: gss.gender, target: tgt.gender },
-            raça: { guessed: gss.race, target: tgt.race },
-            etnia: { guessed: gss.ethnicity, target: tgt.ethnicity },
-            cabelo: { guessed: gss.hair, target: tgt.hair },
-            status: { guessed: gss.aliveStatus, target: tgt.aliveStatus },
-            franchises: {
-              guessed: gss.franchises.map(cf => cf.franchise.name),
-              target: tgt.franchises.map(cf => cf.franchise.name),
-            },
-          }
-          break
-      }
+      const tgt = a.targetCharacter;
+      const gss = a.guessedCharacter!;
+      const comparison = this.buildComparison(mode, gss, tgt);
 
       return {
         attemptNumber: idx + 1,
@@ -328,89 +289,70 @@ export class PlaysService {
           mode === 'Imagem' ? (gss.imageUrl2 ?? null) : (gss.imageUrl1 ?? null),
         comparison,
         triedAt: a.createdAt,
-      }
-    })
+      };
+    });
   }
 
-  async getDailyProgress(userId: number | undefined, modeConfigId: number) {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+  async getDailyProgress(
+    userId: number | undefined,
+    modeConfigId: number,
+    guestId?: string,
+  ) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     const latestSelection = await this.prisma.dailySelection.findFirst({
       where: { modeConfigId, date: today },
       orderBy: { id: 'desc' },
-    })
+    });
 
     if (!latestSelection) {
-      return { alreadyPlayed: false }
+      return { alreadyPlayed: false };
     }
 
     const play = await this.prisma.play.findFirst({
       where: {
         modeConfigId,
         characterId: latestSelection.characterId,
-        createdAt: { gte: today },
-        ...(userId ? { userId } : {}),
+        selectionDate: today,
+        ...(userId
+          ? { userId }
+          : guestId
+          ? { guestId }
+          : { id: -1 }),
       },
       include: {
         modeConfig: { select: { name: true } },
         character: true,
       },
       orderBy: { createdAt: 'desc' },
-    })
+    });
 
     if (!play) {
-      return { alreadyPlayed: false }
+      return { alreadyPlayed: false };
     }
+
+    const ownerFilter = play.userId
+      ? { userId: play.userId }
+      : { guestId: play.guestId! };
 
     const atts = await this.prisma.attempt.findMany({
       where: {
         playId: play.id,
-        ...(userId ? { userId } : { guestId: play.guestId! }),
+        ...ownerFilter,
       },
       include: {
         targetCharacter: { include: { franchises: { include: { franchise: true } } } },
         guessedCharacter: { include: { franchises: { include: { franchise: true } } } },
       },
       orderBy: { order: 'asc' },
-    })
+    });
 
-    const mode = play.modeConfig.name
-    const attempts = atts.map(a => {
-      const tgt = a.targetCharacter
-      const gss = a.guessedCharacter!
-      let comparison: GuessResult['comparison'] = {}
-
-      switch (mode) {
-        case 'Descrição':
-          comparison = {
-            descrição: { guessed: gss.description ?? '', target: tgt.description ?? '' },
-          }
-          break
-        case 'Emoji':
-        case 'Emojis':
-          comparison = {
-            emojis: { guessed: gss.emojis, target: tgt.emojis },
-          }
-          break
-        case 'Imagem':
-          comparison = {
-            imagem: { guessed: gss.imageUrl2 ?? '', target: tgt.imageUrl2 ?? '' },
-          }
-          break
-        default:
-          comparison = {
-            gênero: { guessed: gss.gender, target: tgt.gender },
-            raça: { guessed: gss.race, target: tgt.race },
-            etnia: { guessed: gss.ethnicity, target: tgt.ethnicity },
-            cabelo: { guessed: gss.hair, target: tgt.hair },
-            status: { guessed: gss.aliveStatus, target: tgt.aliveStatus },
-            franchises: {
-              guessed: gss.franchises.map(f => f.franchise.name),
-              target: tgt.franchises.map(f => f.franchise.name),
-            },
-          }
-      }
+    const mode = play.modeConfig.name;
+    const attempts = atts.map((a) => {
+      const tgt = a.targetCharacter;
+      const gss = a.guessedCharacter!;
+      const comparison = this.buildComparison(mode, gss, tgt);
 
       return {
         attemptNumber: a.order!,
@@ -421,8 +363,8 @@ export class PlaysService {
           mode === 'Imagem' ? (gss.imageUrl2 ?? null) : (gss.imageUrl1 ?? null),
         comparison,
         triedAt: a.createdAt,
-      }
-    })
+      };
+    });
 
     return {
       alreadyPlayed: true,
@@ -436,7 +378,7 @@ export class PlaysService {
         imageUrl2: play.character.imageUrl2,
       },
       attempts,
-    }
+    };
   }
 
   async getProgressByPlayId(userId: number | undefined, playId: number) {
@@ -446,13 +388,17 @@ export class PlaysService {
         modeConfig: { select: { name: true } },
         character: true,
       },
-    })
+    });
 
-    if (!play) throw new NotFoundException('Partida não encontrada')
+    if (!play) throw new NotFoundException('Partida não encontrada');
+
+    if (play.userId != null && userId !== play.userId) {
+      throw new UnauthorizedException('Esta partida pertence a outro usuário.');
+    }
 
     const ownerFilter = play.userId
       ? { userId: play.userId }
-      : { guestId: play.guestId! }
+      : { guestId: play.guestId! };
 
     const atts = await this.prisma.attempt.findMany({
       where: {
@@ -464,54 +410,14 @@ export class PlaysService {
         guessedCharacter: { include: { franchises: { include: { franchise: true } } } },
       },
       orderBy: { order: 'asc' },
-    })
+    });
 
-    const mode = play.modeConfig.name
+    const mode = play.modeConfig.name;
 
     const attempts = atts.map((a) => {
-      const tgt = a.targetCharacter
-      const gss = a.guessedCharacter!
-      let comparison: GuessResult['comparison'] = {}
-
-      switch (mode) {
-        case 'Descrição':
-          comparison = {
-            descrição: {
-              guessed: gss.description ?? '',
-              target: tgt.description ?? '',
-            },
-          }
-          break
-        case 'Emoji':
-        case 'Emojis':
-          comparison = {
-            emojis: {
-              guessed: gss.emojis,
-              target: tgt.emojis,
-            },
-          }
-          break
-        case 'Imagem':
-          comparison = {
-            imagem: {
-              guessed: gss.imageUrl2 ?? '',
-              target: tgt.imageUrl2 ?? '',
-            },
-          }
-          break
-        default:
-          comparison = {
-            gênero: { guessed: gss.gender, target: tgt.gender },
-            raça: { guessed: gss.race, target: tgt.race },
-            etnia: { guessed: gss.ethnicity, target: tgt.ethnicity },
-            cabelo: { guessed: gss.hair, target: tgt.hair },
-            status: { guessed: gss.aliveStatus, target: tgt.aliveStatus },
-            franchises: {
-              guessed: gss.franchises.map(f => f.franchise.name),
-              target: tgt.franchises.map(f => f.franchise.name),
-            },
-          }
-      }
+      const tgt = a.targetCharacter;
+      const gss = a.guessedCharacter!;
+      const comparison = this.buildComparison(mode, gss, tgt);
 
       return {
         attemptNumber: a.order!,
@@ -522,8 +428,8 @@ export class PlaysService {
           mode === 'Imagem' ? (gss.imageUrl2 ?? null) : (gss.imageUrl1 ?? null),
         comparison,
         triedAt: a.createdAt,
-      }
-    })
+      };
+    });
 
     return {
       playId: play.id,
@@ -537,6 +443,6 @@ export class PlaysService {
         emojis: play.character.emojis,
       },
       attempts,
-    }
+    };
   }
 }
