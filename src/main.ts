@@ -10,21 +10,34 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'https://panel-dreamdle.vercel.app',
+    'http://liara.picos.ifpi.edu.br',
+    'https://wordle-of-dreams-sandy.vercel.app',
+    'https://panel-dreamdle-avelar-rodrigues-de-sousas-projects.vercel.app',
+    'https://wordle-of-dreams-avelar-rodrigues-de-sousas-projects.vercel.app',
+  ];
+
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:3002',
-      'https://panel-dreamdle.vercel.app',
-      'http://liara.picos.ifpi.edu.br',
-      'https://wordle-of-dreams-sandy.vercel.app',
-      'https://panel-dreamdle-avelar-rodrigues-de-sousas-projects.vercel.app',
-      'https://wordle-of-dreams-avelar-rodrigues-de-sousas-projects.vercel.app',
-    ],
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'), false);
+    },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'X-Guest-Id'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    exposedHeaders: ['Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'X-Guest-Id',
+      'x-guest-id',
+    ],
+    exposedHeaders: ['Authorization', 'Content-Length'],
     optionsSuccessStatus: 204,
   });
 
@@ -42,6 +55,7 @@ async function bootstrap() {
     .setVersion('1.0')
     .addBearerAuth()
     .build();
+
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
   writeFileSync(process.cwd() + '/swagger.json', JSON.stringify(swaggerDocument, null, 2));
   SwaggerModule.setup('api/docs', app, swaggerDocument);
