@@ -17,12 +17,15 @@ const REFRESH_TTL_MS =
     ? Number(process.env.REFRESH_TTL_DAYS) * 24 * 60 * 60 * 1000
     : 7 * 24 * 60 * 60 * 1000;
 
+const REQUIRE_EMAIL_VERIFIED_FOR_LOGIN =
+  (process.env.REQUIRE_EMAIL_VERIFIED_FOR_LOGIN ?? 'true') !== 'false';
+
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   private signAccessToken(user: { id: number; email: string; role: Role }) {
     const payload = { sub: user.id, email: user.email, role: user.role };
@@ -68,6 +71,13 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('Credenciais inválidas.');
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) throw new UnauthorizedException('Credenciais inválidas.');
+
+    if (REQUIRE_EMAIL_VERIFIED_FOR_LOGIN && !user.isEmailVerified) {
+      throw new UnauthorizedException(
+        'E-mail não verificado. Verifique sua caixa de entrada ou reenvie o e-mail.'
+      );
+    }
+
     return this.buildAuthResponse(user.id);
   }
 
@@ -78,6 +88,13 @@ export class AuthService {
     }
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) throw new UnauthorizedException('Credenciais inválidas.');
+
+    if (REQUIRE_EMAIL_VERIFIED_FOR_LOGIN && !user.isEmailVerified) {
+      throw new UnauthorizedException(
+        'E-mail não verificado. Verifique sua caixa de entrada ou reenvie o e-mail.'
+      );
+    }
+
     return this.buildAuthResponse(user.id);
   }
 

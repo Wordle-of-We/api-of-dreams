@@ -1,8 +1,9 @@
-import { Controller, Post, Body, Get, UseGuards, Req, Query } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Req, Query, Redirect } from '@nestjs/common';
 import { AuthService, AuthResponse } from './auth.service';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
 import type { Request } from 'express';
 import { UsersService } from '../users/users.service';
+import { ConfigService } from '@nestjs/config';
 
 interface Profile {
   userId: number;
@@ -15,6 +16,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly usersService: UsersService,
+    private readonly config: ConfigService,
   ) {}
 
   @Post('login')
@@ -61,11 +63,17 @@ export class AuthController {
   }
 
   @Get('verify-email')
+  @Redirect(undefined, 302)
   async verifyEmailGet(
     @Query('email') email: string,
-    @Query('token') token: string,
+    @Query('token') token: string
   ) {
-    return this.usersService.verifyEmail(email, token);
+    try {
+      await this.usersService.verifyEmail(email, token);
+      return { url: `${this.config.get('APP_URL')}/login?verified=1` };
+    } catch {
+      return { url: `${this.config.get('APP_URL')}/login?verified=0` };
+    }
   }
 
   @Post('resend-verification')
