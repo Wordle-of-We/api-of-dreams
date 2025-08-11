@@ -2,34 +2,39 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
+import {
+  fortalezaDayStart,
+  fortalezaDayStartFromYYYYMMDD,
+} from '../../utils/dayStart';
 
 type DailySelectionWithRelations = Prisma.DailySelectionGetPayload<{
   include: { character: true; modeConfig: true };
 }>;
 
-function startOfToday(): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function dayStartFromYYYYMMDD(date: string): Date {
-  return new Date(`${date}T00:00:00-03:00`);
-}
-
 @Injectable()
 export class DailySelectionService {
   private readonly logger = new Logger(DailySelectionService.name);
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-  @Cron('00 00 * * *', { timeZone: 'America/Fortaleza' })
+  /** Chave YYYY-MM-DD calculada em America/Fortaleza */
+  private dayKeyFortaleza(d: Date): string {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Fortaleza',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(d);
+  }
+
+  /** Executa todo dia 00:00 em America/Fortaleza */
+  @Cron('0 0 * * *', { timeZone: 'America/Fortaleza' })
   async triggerGenerateRoute() {
     await this.handleDailyDraw();
   }
 
   async handleDailyDraw() {
-    const today = startOfToday();
+    const today = fortalezaDayStart();
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -37,11 +42,13 @@ export class DailySelectionService {
       where: { isActive: true },
     });
 
+    // guarda ids já usados hoje (para não repetir entre modos no mesmo dia)
     const usedToday = new Set<number>();
 
     for (const modeConfig of modeConfigs) {
+      // se já existe seleção para o modo hoje, reaproveita
       const existing = await this.prisma.dailySelection.findFirst({
-        where: { date: today, modeConfigId: modeConfig.id },
+        where: { date: today, modeConfigId: modeConfig.id, latest: true },
         orderBy: { id: 'desc' },
       });
 
@@ -50,7 +57,7 @@ export class DailySelectionService {
         continue;
       }
 
-      const where: any = {
+      const where: Prisma.CharacterWhereInput = {
         AND: [
           { id: { notIn: Array.from(usedToday) } },
           {
@@ -66,8 +73,11 @@ export class DailySelectionService {
         ],
       };
 
+      // no modo Imagem, garanta segunda imagem
       if (modeConfig.name === 'Imagem') {
-        where.AND.push({ imageUrl2: { not: null } });
+        (where.AND as Prisma.CharacterWhereInput[]).push({
+          imageUrl2: { not: null },
+        });
       }
 
       const total = await this.prisma.character.count({ where });
@@ -77,10 +87,15 @@ export class DailySelectionService {
       }
 
       const skip = Math.floor(Math.random() * total);
-      const [character] = await this.prisma.character.findMany({ where, skip, take: 1 });
+      const [character] = await this.prisma.character.findMany({
+        where,
+        skip,
+        take: 1,
+      });
 
+      // invalida "latest" anteriores do dia/modo (hardening)
       await this.prisma.dailySelection.updateMany({
-        where: { date: today, modeConfigId: modeConfig.id },
+        where: { date: today, modeConfigId: modeConfig.id, latest: true },
         data: { latest: false },
       });
 
@@ -99,7 +114,7 @@ export class DailySelectionService {
   }
 
   async createManualSelection(dto: { characterId: number; modeConfigId: number }) {
-    const today = startOfToday();
+    const today = fortalezaDayStart();
 
     const [character, modeConfig] = await Promise.all([
       this.prisma.character.findUnique({ where: { id: dto.characterId } }),
@@ -111,7 +126,7 @@ export class DailySelectionService {
     }
 
     await this.prisma.dailySelection.updateMany({
-      where: { date: today, modeConfigId: dto.modeConfigId },
+      where: { date: today, modeConfigId: dto.modeConfigId, latest: true },
       data: { latest: false },
     });
 
@@ -127,17 +142,19 @@ export class DailySelectionService {
   }
 
   async manualDraw(modeConfigId: number) {
-    const today = startOfToday();
+    const today = fortalezaDayStart();
 
     const mode = await this.prisma.modeConfig.findUnique({ where: { id: modeConfigId } });
     if (!mode) throw new NotFoundException('ModeConfig não encontrado.');
 
+    // personagens já usados hoje (qualquer modo)
     const existingToday = await this.prisma.dailySelection.findMany({
       where: { date: today },
+      select: { characterId: true },
     });
-    const usedIds = existingToday.map(sel => sel.characterId);
+    const usedIds = existingToday.map((sel) => sel.characterId);
 
-    const where: any = {
+    const where: Prisma.CharacterWhereInput = {
       AND: [
         { id: { notIn: usedIds } },
         {
@@ -154,7 +171,9 @@ export class DailySelectionService {
     };
 
     if (mode.name === 'Imagem') {
-      where.AND.push({ imageUrl2: { not: null } });
+      (where.AND as Prisma.CharacterWhereInput[]).push({
+        imageUrl2: { not: null },
+      });
     }
 
     const total = await this.prisma.character.count({ where });
@@ -166,7 +185,7 @@ export class DailySelectionService {
     const [character] = await this.prisma.character.findMany({ where, skip, take: 1 });
 
     await this.prisma.dailySelection.updateMany({
-      where: { date: today, modeConfigId },
+      where: { date: today, modeConfigId, latest: true },
       data: { latest: false },
     });
 
@@ -182,9 +201,9 @@ export class DailySelectionService {
   }
 
   async getTodaySelection(modeId?: number) {
-    const today = startOfToday();
+    const today = fortalezaDayStart();
 
-    const where: any = { date: today };
+    const where: Prisma.DailySelectionWhereInput = { date: today };
     if (modeId !== undefined) where.modeConfigId = modeId;
 
     return this.prisma.dailySelection.findMany({
@@ -194,7 +213,7 @@ export class DailySelectionService {
   }
 
   async getTodayLatestSelections(modeId?: number) {
-    const today = startOfToday();
+    const today = fortalezaDayStart();
 
     return this.prisma.dailySelection.findMany({
       where: {
@@ -208,7 +227,7 @@ export class DailySelectionService {
   }
 
   async getAllTodayRaw(): Promise<DailySelectionWithRelations[]> {
-    const today = startOfToday();
+    const today = fortalezaDayStart();
 
     return this.prisma.dailySelection.findMany({
       where: { date: today },
@@ -221,16 +240,17 @@ export class DailySelectionService {
     return this.prisma.dailySelection.findFirst({
       where: { modeConfigId: modeId, latest: true },
       include: { character: true },
+      orderBy: { id: 'desc' },
     });
   }
 
   async getCalendarDays(params: { modeId?: number; from?: string; to?: string }) {
-    const where: any = { latest: true };
+    const where: Prisma.DailySelectionWhereInput = { latest: true };
     if (params.modeId) where.modeConfigId = params.modeId;
 
     if (params.from || params.to) {
-      const from = params.from ? dayStartFromYYYYMMDD(params.from) : undefined;
-      const to = params.to ? dayStartFromYYYYMMDD(params.to) : undefined;
+      const from = params.from ? fortalezaDayStartFromYYYYMMDD(params.from) : undefined;
+      const to = params.to ? fortalezaDayStartFromYYYYMMDD(params.to) : undefined;
       where.date = {
         ...(from ? { gte: from } : {}),
         ...(to ? { lte: to } : {}),
@@ -245,7 +265,7 @@ export class DailySelectionService {
 
     const map = new Map<string, number[]>();
     for (const r of rows) {
-      const key = r.date.toISOString().slice(0, 10);
+      const key = this.dayKeyFortaleza(r.date);
       const arr = map.get(key) ?? [];
       arr.push(r.modeConfigId);
       map.set(key, arr);
@@ -255,7 +275,7 @@ export class DailySelectionService {
   }
 
   async getLatestByDateAndMode(modeId: number, date: string) {
-    const day = dayStartFromYYYYMMDD(date);
+    const day = fortalezaDayStartFromYYYYMMDD(date);
     const sel = await this.prisma.dailySelection.findFirst({
       where: { modeConfigId: modeId, date: day, latest: true },
       include: { character: true, modeConfig: true },
@@ -265,15 +285,19 @@ export class DailySelectionService {
   }
 
   async repairLatestForDay(date: string, modeId?: number) {
-    const day = dayStartFromYYYYMMDD(date);
+    const day = fortalezaDayStartFromYYYYMMDD(date);
 
-    const where: any = { date: day, ...(modeId ? { modeConfigId: modeId } : {}) };
+    const where: Prisma.DailySelectionWhereInput = {
+      date: day,
+      ...(modeId ? { modeConfigId: modeId } : {}),
+    };
 
     const groups = await this.prisma.dailySelection.findMany({
       where,
       orderBy: { id: 'asc' },
     });
 
+    // Agrupa por modo
     const byMode = new Map<number, typeof groups>();
     for (const g of groups) {
       const arr = byMode.get(g.modeConfigId) ?? [];
@@ -281,10 +305,13 @@ export class DailySelectionService {
       byMode.set(g.modeConfigId, arr);
     }
 
-    for (const [m, arr] of byMode.entries()) {
+    for (const [, arr] of byMode.entries()) {
       if (arr.length === 0) continue;
       const last = arr[arr.length - 1];
-      const idsToLatestFalse = arr.filter(x => x.id !== last.id && x.latest).map(x => x.id);
+
+      const idsToLatestFalse = arr
+        .filter((x) => x.id !== last.id && x.latest)
+        .map((x) => x.id);
       const needsLastTrue = !last.latest;
 
       if (idsToLatestFalse.length) {

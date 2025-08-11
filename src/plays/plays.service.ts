@@ -7,6 +7,10 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { v4 as uuidv4 } from 'uuid';
 import { StatsSnapshotService } from '../stats/stats-snapshot.service';
+import {
+  fortalezaDayStart,
+  fortalezaDayStartFromYYYYMMDD,
+} from '../../utils/dayStart';
 
 export interface Comparison<T> {
   guessed: T;
@@ -30,13 +34,9 @@ export class PlaysService {
     private readonly statsSnapshot: StatsSnapshotService,
   ) {}
 
-  private dayStartFromYYYYMMDD(date?: string): Date {
-    if (!date) {
-      const d = new Date();
-      d.setHours(0, 0, 0, 0);
-      return d;
-    }
-    return new Date(`${date}T00:00:00-03:00`);
+  /** Sempre retorna o início do dia em Fortaleza */
+  private getDayStart(date?: string): Date {
+    return date ? fortalezaDayStartFromYYYYMMDD(date) : fortalezaDayStart();
   }
 
   private toStartResponse(full: any) {
@@ -66,27 +66,12 @@ export class PlaysService {
   private buildComparison(mode: string, gss: any, tgt: any): GuessResult['comparison'] {
     switch (mode) {
       case 'Descrição':
-        return {
-          descrição: {
-            guessed: gss.description ?? '',
-            target: tgt.description ?? '',
-          },
-        };
+        return { descrição: { guessed: gss.description ?? '', target: tgt.description ?? '' } };
       case 'Emoji':
       case 'Emojis':
-        return {
-          emojis: {
-            guessed: gss.emojis,
-            target: tgt.emojis,
-          },
-        };
+        return { emojis: { guessed: gss.emojis, target: tgt.emojis } };
       case 'Imagem':
-        return {
-          imagem: {
-            guessed: gss.imageUrl2 ?? '',
-            target: tgt.imageUrl2 ?? '',
-          },
-        };
+        return { imagem: { guessed: gss.imageUrl2 ?? '', target: tgt.imageUrl2 ?? '' } };
       default:
         return {
           gênero: { guessed: gss.gender, target: tgt.gender },
@@ -108,8 +93,9 @@ export class PlaysService {
     date?: string,
     guestId?: string,
   ) {
-    const dayStart = this.dayStartFromYYYYMMDD(date);
+    const dayStart = this.getDayStart(date);
 
+    // Reutiliza a mesma play do dia para user/guest
     if (userId) {
       const existing = await this.prisma.play.findFirst({
         where: { userId, modeConfigId, selectionDate: dayStart },
@@ -127,11 +113,10 @@ export class PlaysService {
         where: { guestId, modeConfigId, selectionDate: dayStart },
         include: { character: true, modeConfig: true },
       });
-      if (existingGuest) {
-        return { ...this.toStartResponse(existingGuest), guestId };
-      }
+      if (existingGuest) return { ...this.toStartResponse(existingGuest), guestId };
     }
 
+    // Seleção diária do mesmo dia (Fortaleza)
     const sel = await this.prisma.dailySelection.findFirst({
       where: { modeConfigId, date: dayStart, latest: true },
       orderBy: { id: 'desc' },
@@ -178,36 +163,22 @@ export class PlaysService {
 
     const mode = play.modeConfig.name;
     const target = play.character;
-    const ownerFilter = play.userId
-      ? { userId: play.userId }
-      : { guestId: play.guestId! };
+    const ownerFilter = play.userId ? { userId: play.userId } : { guestId: play.guestId! };
 
     const trimmed = guess.trim();
 
     const already = await this.prisma.attempt.findFirst({
-      where: {
-        ...ownerFilter,
-        modeConfigId: play.modeConfigId,
-        playId: playId,
-        guess: trimmed,
-      },
+      where: { ...ownerFilter, modeConfigId: play.modeConfigId, playId, guess: trimmed },
     });
-    if (already) {
-      throw new BadRequestException('Você já chutou esse personagem nesta partida');
-    }
+    if (already) throw new BadRequestException('Você já chutou esse personagem nesta partida');
 
     const guessed = await this.prisma.character.findUnique({
       where: { name: trimmed },
       include: { franchises: { include: { franchise: true } } },
     });
-    if (!guessed) {
-      throw new NotFoundException(`Personagem "${guess}" não encontrado`);
-    }
+    if (!guessed) throw new NotFoundException(`Personagem "${guess}" não encontrado`);
 
-    const prevCount = await this.prisma.attempt.count({
-      where: { ...ownerFilter, playId },
-    });
-
+    const prevCount = await this.prisma.attempt.count({ where: { ...ownerFilter, playId } });
     const isCorrect = guessed.id === target.id;
 
     const attempt = await this.prisma.attempt.create({
@@ -247,10 +218,7 @@ export class PlaysService {
     };
   }
 
-  async getAttemptsByPlay(
-    userId: number | undefined,
-    playId: number,
-  ): Promise<GuessResult[]> {
+  async getAttemptsByPlay(userId: number | undefined, playId: number): Promise<GuessResult[]> {
     const play = await this.prisma.play.findUnique({
       where: { id: playId },
       include: { modeConfig: { select: { name: true } } },
@@ -262,9 +230,7 @@ export class PlaysService {
     }
 
     const mode = play.modeConfig.name;
-    const ownerFilter = play.userId
-      ? { userId: play.userId }
-      : { guestId: play.guestId! };
+    const ownerFilter = play.userId ? { userId: play.userId } : { guestId: play.guestId! };
 
     const atts = await this.prisma.attempt.findMany({
       where: { ...ownerFilter, playId },
@@ -298,28 +264,20 @@ export class PlaysService {
     modeConfigId: number,
     guestId?: string,
   ) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = this.getDayStart(); // Fortaleza
 
     const latestSelection = await this.prisma.dailySelection.findFirst({
-      where: { modeConfigId, date: today },
+      where: { modeConfigId, date: today, latest: true },
       orderBy: { id: 'desc' },
     });
-
-    if (!latestSelection) {
-      return { alreadyPlayed: false };
-    }
+    if (!latestSelection) return { alreadyPlayed: false };
 
     const play = await this.prisma.play.findFirst({
       where: {
         modeConfigId,
         characterId: latestSelection.characterId,
         selectionDate: today,
-        ...(userId
-          ? { userId }
-          : guestId
-          ? { guestId }
-          : { id: -1 }),
+        ...(userId ? { userId } : guestId ? { guestId } : { id: -1 }),
       },
       include: {
         modeConfig: { select: { name: true } },
@@ -328,19 +286,12 @@ export class PlaysService {
       orderBy: { createdAt: 'desc' },
     });
 
-    if (!play) {
-      return { alreadyPlayed: false };
-    }
+    if (!play) return { alreadyPlayed: false };
 
-    const ownerFilter = play.userId
-      ? { userId: play.userId }
-      : { guestId: play.guestId! };
+    const ownerFilter = play.userId ? { userId: play.userId } : { guestId: play.guestId! };
 
     const atts = await this.prisma.attempt.findMany({
-      where: {
-        playId: play.id,
-        ...ownerFilter,
-      },
+      where: { playId: play.id, ...ownerFilter },
       include: {
         targetCharacter: { include: { franchises: { include: { franchise: true } } } },
         guessedCharacter: { include: { franchises: { include: { franchise: true } } } },
@@ -389,22 +340,16 @@ export class PlaysService {
         character: true,
       },
     });
-
     if (!play) throw new NotFoundException('Partida não encontrada');
 
     if (play.userId != null && userId !== play.userId) {
       throw new UnauthorizedException('Esta partida pertence a outro usuário.');
     }
 
-    const ownerFilter = play.userId
-      ? { userId: play.userId }
-      : { guestId: play.guestId! };
+    const ownerFilter = play.userId ? { userId: play.userId } : { guestId: play.guestId! };
 
     const atts = await this.prisma.attempt.findMany({
-      where: {
-        playId,
-        ...ownerFilter,
-      },
+      where: { playId, ...ownerFilter },
       include: {
         targetCharacter: { include: { franchises: { include: { franchise: true } } } },
         guessedCharacter: { include: { franchises: { include: { franchise: true } } } },
