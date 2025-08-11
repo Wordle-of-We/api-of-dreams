@@ -6,6 +6,7 @@ import { GameModeService } from './game-mode.service';
 import { CreateGameModeDto } from './dto/create-game-mode.dto';
 import { UpdateGameModeDto } from './dto/update-game-mode.dto';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+import { RolesGuard } from '../auth/guard/roles.guard'; // <-- adicionado
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
@@ -13,10 +14,10 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 @ApiTags('game-mode')
 @Controller('game-mode')
 export class GameModeController {
-  constructor(private readonly service: GameModeService) { }
+  constructor(private readonly service: GameModeService) {}
 
   @Post('initialize')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   initialize() {
@@ -24,7 +25,7 @@ export class GameModeController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   create(@Body() dto: CreateGameModeDto) {
@@ -42,7 +43,7 @@ export class GameModeController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   update(
@@ -53,7 +54,7 @@ export class GameModeController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   remove(@Param('id', ParseIntPipe) id: number) {

@@ -31,6 +31,13 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  isEmailVerified    Boolean   @default(false)
+  emailVerifyToken   String?
+  emailVerifyExpires DateTime?
+
+  refreshTokenHash    String?
+  refreshTokenExpires DateTime?
+
   plays      Play[]
   attempts   Attempt[]
   accessLogs AccessLog[]

@@ -7,11 +7,17 @@ type DailySelectionWithRelations = Prisma.DailySelectionGetPayload<{
   include: { character: true; modeConfig: true };
 }>;
 
+function startOfToday(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 @Injectable()
 export class DailySelectionService {
   private readonly logger = new Logger(DailySelectionService.name);
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   @Cron('53 10 * * *', { timeZone: 'America/Fortaleza' })
   async triggerGenerateRoute() {
@@ -19,9 +25,7 @@ export class DailySelectionService {
   }
 
   async handleDailyDraw() {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
+    const today = startOfToday();
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -87,8 +91,7 @@ export class DailySelectionService {
   }
 
   async createManualSelection(dto: { characterId: number; modeConfigId: number }) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = startOfToday();
 
     const [character, modeConfig] = await Promise.all([
       this.prisma.character.findUnique({ where: { id: dto.characterId } }),
@@ -100,13 +103,8 @@ export class DailySelectionService {
     }
 
     await this.prisma.dailySelection.updateMany({
-      where: {
-        date: today,
-        modeConfigId: dto.modeConfigId,
-      },
-      data: {
-        latest: false,
-      },
+      where: { date: today, modeConfigId: dto.modeConfigId },
+      data: { latest: false },
     });
 
     return this.prisma.dailySelection.create({
@@ -116,12 +114,12 @@ export class DailySelectionService {
         character: { connect: { id: dto.characterId } },
         modeConfig: { connect: { id: dto.modeConfigId } },
       },
+      include: { character: true, modeConfig: true },
     });
   }
 
   async manualDraw(modeConfigId: number) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = startOfToday();
 
     const mode = await this.prisma.modeConfig.findUnique({ where: { id: modeConfigId } });
     if (!mode) throw new NotFoundException('ModeConfig não encontrado.');
@@ -139,7 +137,7 @@ export class DailySelectionService {
             dailySelections: {
               some: {
                 modeConfigId,
-                date: { gte: new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000) }, // últimos 30 dias
+                date: { gte: new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000) },
               },
             },
           },
@@ -167,21 +165,15 @@ export class DailySelectionService {
         character: { connect: { id: character.id } },
         modeConfig: { connect: { id: modeConfigId } },
       },
-      include: {
-        character: true,
-        modeConfig: true,
-      },
+      include: { character: true, modeConfig: true },
     });
   }
 
   async getTodaySelection(modeId?: number) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = startOfToday();
 
     const where: any = { date: today };
-    if (modeId !== undefined) {
-      where.modeConfigId = modeId;
-    }
+    if (modeId !== undefined) where.modeConfigId = modeId;
 
     return this.prisma.dailySelection.findMany({
       where,
@@ -190,8 +182,7 @@ export class DailySelectionService {
   }
 
   async getTodayLatestSelections(modeId?: number) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = startOfToday();
 
     return this.prisma.dailySelection.findMany({
       where: {
@@ -205,8 +196,7 @@ export class DailySelectionService {
   }
 
   async getAllTodayRaw(): Promise<DailySelectionWithRelations[]> {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = startOfToday();
 
     return this.prisma.dailySelection.findMany({
       where: { date: today },
@@ -217,13 +207,8 @@ export class DailySelectionService {
 
   async getLatestByMode(modeId: number) {
     return this.prisma.dailySelection.findFirst({
-      where: {
-        modeConfigId: modeId,
-        latest: true,
-      },
-      include: {
-        character: true,
-      },
+      where: { modeConfigId: modeId, latest: true },
+      include: { character: true },
     });
   }
 }

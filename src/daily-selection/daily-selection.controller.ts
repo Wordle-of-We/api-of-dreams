@@ -9,6 +9,7 @@ import {
   UseGuards,
   Param,
   ParseIntPipe,
+  Logger,
 } from '@nestjs/common';
 import { DailySelectionService } from '../daily-selection/daily-selection.service';
 import { Prisma, Role } from '@prisma/client';
@@ -22,6 +23,8 @@ type DailySelectionWithRelations = Prisma.DailySelectionGetPayload<{
 
 @Controller('daily-selection')
 export class DailySelectionController {
+  private readonly logger = new Logger(DailySelectionController.name);
+
   constructor(private readonly svc: DailySelectionService) {}
 
   @Get()
@@ -50,15 +53,16 @@ export class DailySelectionController {
   @Post('manual')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  async manualDraw(@Body() body: { modeConfigId: number }) {
+  async manualDraw(@Body() body: { modeConfigId: number; characterId?: number }) {
     try {
-      const { modeConfigId } = body;
+      const { modeConfigId, characterId } = body;
+      if (characterId) {
+        return await this.svc.createManualSelection({ modeConfigId, characterId });
+      }
       return await this.svc.manualDraw(modeConfigId);
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      console.error('[DailySelection] Erro no manualDraw:', error);
+      if (error instanceof NotFoundException) throw error;
+      this.logger.error('[DailySelection] Erro no manualDraw', error as any);
       throw new InternalServerErrorException('Erro ao realizar sorteio manual');
     }
   }

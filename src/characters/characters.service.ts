@@ -198,4 +198,55 @@ export class CharactersService {
       where: { id },
     });
   }
+
+  async updateImage2(
+    id: number,
+    fileBuffer?: Buffer,
+    imageUrl2?: string,
+  ): Promise<Character> {
+    const character = await this.findOne(id);
+
+    // Se já existe imageUrl2, remove do Cloudinary
+    if (character.imageUrl2) {
+      const publicId = this.cloudinary.extractPublicIdFromUrl(character.imageUrl2);
+      await this.cloudinary.deleteImage(publicId);
+    }
+
+    let newUrl: string;
+    if (fileBuffer) {
+      const upload = await this.cloudinary.uploadBuffer(
+        fileBuffer,
+        'characters',
+        `character-${id}-image2-${Date.now()}`,
+      );
+      newUrl = upload.secure_url;
+    } else if (imageUrl2) {
+      newUrl = imageUrl2;
+    } else {
+      throw new BadRequestException('Envie um arquivo ou informe imageUrl2 no body');
+    }
+
+    return this.prisma.character.update({
+      where: { id },
+      data: { imageUrl2: newUrl },
+      include: { franchises: { include: { franchise: true } } },
+    });
+  }
+
+  async deleteImage2(id: number): Promise<Character> {
+    const character = await this.findOne(id);
+
+    if (!character.imageUrl2) {
+      throw new BadRequestException('Character does not have a second image to delete');
+    }
+
+    const publicId = this.cloudinary.extractPublicIdFromUrl(character.imageUrl2);
+    await this.cloudinary.deleteImage(publicId);
+
+    return this.prisma.character.update({
+      where: { id },
+      data: { imageUrl2: null },
+      include: { franchises: { include: { franchise: true } } },
+    });
+  }
 }

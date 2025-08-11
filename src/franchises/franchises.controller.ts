@@ -20,25 +20,41 @@ import { UpdateFranchiseDto } from './dto/update-franchise.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../../src/auth/guard/jwt-auth.guard';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { RolesGuard } from '../../src/auth/guard/roles.guard';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 
 @ApiTags('franchises')
 @Controller('franchises')
 export class FranchisesController {
-  constructor(private readonly service: FranchisesService) { }
+  constructor(private readonly service: FranchisesService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
-  @UseInterceptors(
-    FileInterceptor('file', { storage: multer.memoryStorage() })
-  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        imageUrl: { type: 'string', nullable: true },
+        file: { type: 'string', format: 'binary', nullable: true },
+      },
+      required: ['name'],
+    },
+  })
+  @UseInterceptors(FileInterceptor('file', { storage: multer.memoryStorage() }))
   create(
     @Body() dto: CreateFranchiseDto,
-    @UploadedFile() file?: multer.File
+    @UploadedFile() file?: Multer.File,
   ) {
-    return this.service.create(dto, file?.buffer)
+    return this.service.create(dto, file?.buffer);
   }
 
   @Get()
@@ -52,7 +68,7 @@ export class FranchisesController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   update(
@@ -63,7 +79,7 @@ export class FranchisesController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   remove(@Param('id', ParseIntPipe) id: number) {
@@ -71,12 +87,20 @@ export class FranchisesController {
   }
 
   @Patch(':id/image')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
-  @UseInterceptors(
-    FileInterceptor('file', { storage: multer.memoryStorage() }),
-  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        imageUrl: { type: 'string', nullable: true },
+        file: { type: 'string', format: 'binary', nullable: true },
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file', { storage: multer.memoryStorage() }))
   async updateImage(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFile() file: Multer.File,
@@ -86,7 +110,7 @@ export class FranchisesController {
   }
 
   @Delete(':id/image')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   async deleteImage(@Param('id', ParseIntPipe) id: number) {
