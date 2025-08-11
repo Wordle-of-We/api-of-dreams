@@ -90,6 +90,11 @@ model ModeConfig {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  imageUseSecondImage Boolean @default(false)
+  imageBlurStart      Int     @default(24)
+  imageBlurStep       Int     @default(4)
+  imageBlurMin        Int     @default(0)
+
   plays           Play[]
   attempts        Attempt[]
   dailySelections DailySelection[]

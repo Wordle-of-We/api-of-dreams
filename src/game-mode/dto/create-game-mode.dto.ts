@@ -1,16 +1,20 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsBoolean } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateGameModeDto {
-  @ApiProperty({ example: 'CHARACTERISTICS' })
-  @IsString()
-  name: string;
+  @ApiProperty() @IsString() name: string;
+  @ApiProperty() @IsString() description: string;
+  @ApiPropertyOptional() @IsOptional() @IsBoolean() isActive?: boolean;
 
-  @ApiProperty()
-  @IsString()
-  description: string;
+  @ApiPropertyOptional() @IsOptional() @IsBoolean()
+  imageUseSecondImage?: boolean;
 
-  @ApiProperty({ default: true })
-  @IsBoolean()
-  isActive: boolean;
+  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(0)
+  imageBlurStart?: number;
+
+  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(0)
+  imageBlurStep?: number;
+
+  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(0)
+  imageBlurMin?: number;
 }

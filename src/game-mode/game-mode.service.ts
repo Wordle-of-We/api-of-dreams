@@ -3,11 +3,11 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ModeConfig } from '@prisma/client';
 import { CreateGameModeDto } from './dto/create-game-mode.dto';
 import { UpdateGameModeDto } from './dto/update-game-mode.dto';
-import { DailySelectionService } from '../daily-selection/daily-selection.service'; 
+import { DailySelectionService } from '../daily-selection/daily-selection.service';
 
 @Injectable()
 export class GameModeService {
-  constructor(private readonly prisma: PrismaService, private readonly dailySelection: DailySelectionService, ) {}
+  constructor(private readonly prisma: PrismaService, private readonly dailySelection: DailySelectionService,) { }
 
   async create(dto: CreateGameModeDto): Promise<ModeConfig> {
     return this.prisma.modeConfig.create({
@@ -59,7 +59,11 @@ export class GameModeService {
       {
         name: 'Imagem',
         description: 'Adivinhe o personagem com base em sua imagem desfocada',
-      },
+        imageUseSecondImage: true,
+        imageBlurStart: 24,
+        imageBlurStep: 4,
+        imageBlurMin: 0,
+      } as Partial<ModeConfig>,
     ];
 
     const result: ModeConfig[] = [];
@@ -67,14 +71,31 @@ export class GameModeService {
       let mc = await this.prisma.modeConfig.findUnique({ where: { name: mode.name } });
       if (!mc) {
         mc = await this.prisma.modeConfig.create({
-          data: { ...mode, isActive: true },
+          data: {
+            name: mode.name!,
+            description: mode.description!,
+            isActive: true,
+            imageUseSecondImage: !!mode.imageUseSecondImage,
+            imageBlurStart: mode.imageBlurStart ?? 24,
+            imageBlurStep: mode.imageBlurStep ?? 4,
+            imageBlurMin: mode.imageBlurMin ?? 0,
+          },
+        });
+      } else if (mode.name === 'Imagem') {
+        mc = await this.prisma.modeConfig.update({
+          where: { id: mc.id },
+          data: {
+            imageUseSecondImage: true,
+            imageBlurStart: 24,
+            imageBlurStep: 4,
+            imageBlurMin: 0,
+          },
         });
       }
       result.push(mc);
     }
 
     await this.dailySelection.handleDailyDraw();
-
     return result;
   }
 }

@@ -17,9 +17,9 @@ function startOfToday(): Date {
 export class DailySelectionService {
   private readonly logger = new Logger(DailySelectionService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
-  @Cron('53 10 * * *', { timeZone: 'America/Fortaleza' })
+  @Cron('00 07 * * *', { timeZone: 'America/Fortaleza' })
   async triggerGenerateRoute() {
     await this.handleDailyDraw();
   }
@@ -46,7 +46,7 @@ export class DailySelectionService {
         continue;
       }
 
-      const where = {
+      const where: any = {
         AND: [
           { id: { notIn: Array.from(usedToday) } },
           {
@@ -61,6 +61,10 @@ export class DailySelectionService {
           },
         ],
       };
+
+      if (modeConfig.name === 'Imagem') {
+        where.AND.push({ imageUrl2: { not: null } });
+      }
 
       const total = await this.prisma.character.count({ where });
       if (total === 0) {
@@ -129,7 +133,8 @@ export class DailySelectionService {
     });
     const usedIds = existingToday.map(sel => sel.characterId);
 
-    const where = {
+    // filtro base
+    const where: any = {
       AND: [
         { id: { notIn: usedIds } },
         {
@@ -144,6 +149,11 @@ export class DailySelectionService {
         },
       ],
     };
+
+    // 👇 para o modo "Imagem", exigir imageUrl2
+    if (mode.name === 'Imagem') {
+      where.AND.push({ imageUrl2: { not: null } });
+    }
 
     const total = await this.prisma.character.count({ where });
     if (total === 0) {

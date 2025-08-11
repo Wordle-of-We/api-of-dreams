@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "ModeConfig" ADD COLUMN     "imageBlurMin" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "imageBlurStart" INTEGER NOT NULL DEFAULT 24,
+ADD COLUMN     "imageBlurStep" INTEGER NOT NULL DEFAULT 4,
+ADD COLUMN     "imageUseSecondImage" BOOLEAN NOT NULL DEFAULT false;

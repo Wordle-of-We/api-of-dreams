@@ -23,7 +23,7 @@ export class PlaysService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly statsSnapshot: StatsSnapshotService,
-  ) { }
+  ) {}
 
   async startPlay(userId: number | undefined, modeConfigId: number) {
     const today = new Date()
@@ -48,6 +48,7 @@ export class PlaysService {
             name: full.character.name,
             description: full.character.description,
             imageUrl1: full.character.imageUrl1,
+            imageUrl2: full.character.imageUrl2,
             emojis: full.character.emojis,
           },
         }
@@ -87,6 +88,7 @@ export class PlaysService {
         name: full.character.name,
         description: full.character.description,
         imageUrl1: full.character.imageUrl1,
+        imageUrl2: full.character.imageUrl2,
         emojis: full.character.emojis,
       },
     }
@@ -174,7 +176,8 @@ export class PlaysService {
           },
         }
         break
-      case 'Emoji':
+      case 'Emoji': // compat: se algum modo antigo usar "Emoji" no singular
+      case 'Emojis':
         comparison = {
           emojis: {
             guessed: guessed.emojis,
@@ -185,8 +188,8 @@ export class PlaysService {
       case 'Imagem':
         comparison = {
           imagem: {
-            guessed: guessed.imageUrl1 ?? '',
-            target: target.imageUrl1 ?? '',
+            guessed: guessed.imageUrl2 ?? '',
+            target: target.imageUrl2 ?? '',
           },
         }
         break
@@ -210,7 +213,9 @@ export class PlaysService {
       guess: attempt.guess,
       isCorrect,
       playCompleted: isCorrect,
-      guessedImageUrl1: guessed.imageUrl1 ?? null,
+      // usa image 2 no modo Imagem
+      guessedImageUrl1:
+        mode === 'Imagem' ? (guessed.imageUrl2 ?? null) : (guessed.imageUrl1 ?? null),
       comparison,
       triedAt: attempt.createdAt,
     }
@@ -255,6 +260,7 @@ export class PlaysService {
           }
           break
         case 'Emoji':
+        case 'Emojis':
           comparison = {
             emojis: {
               guessed: gss.emojis,
@@ -265,8 +271,8 @@ export class PlaysService {
         case 'Imagem':
           comparison = {
             imagem: {
-              guessed: gss.imageUrl1 ?? '',
-              target: tgt.imageUrl1 ?? '',
+              guessed: gss.imageUrl2 ?? '',
+              target: tgt.imageUrl2 ?? '',
             },
           }
           break
@@ -290,7 +296,8 @@ export class PlaysService {
         guess: a.guess,
         isCorrect: a.isCorrect,
         playCompleted: a.isCorrect,
-        guessedImageUrl1: gss.imageUrl1 ?? null,
+        guessedImageUrl1:
+          mode === 'Imagem' ? (gss.imageUrl2 ?? null) : (gss.imageUrl1 ?? null),
         comparison,
         triedAt: a.createdAt,
       }
@@ -353,13 +360,14 @@ export class PlaysService {
           }
           break
         case 'Emoji':
+        case 'Emojis':
           comparison = {
             emojis: { guessed: gss.emojis, target: tgt.emojis },
           }
           break
         case 'Imagem':
           comparison = {
-            imagem: { guessed: gss.imageUrl1 ?? '', target: tgt.imageUrl1 ?? '' },
+            imagem: { guessed: gss.imageUrl2 ?? '', target: tgt.imageUrl2 ?? '' },
           }
           break
         default:
@@ -381,7 +389,8 @@ export class PlaysService {
         guess: a.guess,
         isCorrect: a.isCorrect,
         playCompleted: a.isCorrect,
-        guessedImageUrl1: gss.imageUrl1 ?? null,
+        guessedImageUrl1:
+          mode === 'Imagem' ? (gss.imageUrl2 ?? null) : (gss.imageUrl1 ?? null),
         comparison,
         triedAt: a.createdAt,
       }
@@ -396,6 +405,7 @@ export class PlaysService {
         name: play.character.name,
         description: play.character.description,
         imageUrl1: play.character.imageUrl1,
+        imageUrl2: play.character.imageUrl2,
       },
       attempts,
     }
@@ -408,13 +418,13 @@ export class PlaysService {
         modeConfig: { select: { name: true } },
         character: true,
       },
-    });
+    })
 
-    if (!play) throw new NotFoundException('Partida não encontrada');
+    if (!play) throw new NotFoundException('Partida não encontrada')
 
     const ownerFilter = play.userId
       ? { userId: play.userId }
-      : { guestId: play.guestId! };
+      : { guestId: play.guestId! }
 
     const atts = await this.prisma.attempt.findMany({
       where: {
@@ -426,14 +436,14 @@ export class PlaysService {
         guessedCharacter: { include: { franchises: { include: { franchise: true } } } },
       },
       orderBy: { order: 'asc' },
-    });
+    })
 
-    const mode = play.modeConfig.name;
+    const mode = play.modeConfig.name
 
-    const attempts = atts.map((a, idx) => {
-      const tgt = a.targetCharacter;
-      const gss = a.guessedCharacter!;
-      let comparison: GuessResult['comparison'] = {};
+    const attempts = atts.map((a) => {
+      const tgt = a.targetCharacter
+      const gss = a.guessedCharacter!
+      let comparison: GuessResult['comparison'] = {}
 
       switch (mode) {
         case 'Descrição':
@@ -442,24 +452,25 @@ export class PlaysService {
               guessed: gss.description ?? '',
               target: tgt.description ?? '',
             },
-          };
-          break;
+          }
+          break
         case 'Emoji':
+        case 'Emojis':
           comparison = {
             emojis: {
               guessed: gss.emojis,
               target: tgt.emojis,
             },
-          };
-          break;
+          }
+          break
         case 'Imagem':
           comparison = {
             imagem: {
-              guessed: gss.imageUrl1 ?? '',
-              target: tgt.imageUrl1 ?? '',
+              guessed: gss.imageUrl2 ?? '',
+              target: tgt.imageUrl2 ?? '',
             },
-          };
-          break;
+          }
+          break
         default:
           comparison = {
             gênero: { guessed: gss.gender, target: tgt.gender },
@@ -471,7 +482,7 @@ export class PlaysService {
               guessed: gss.franchises.map(f => f.franchise.name),
               target: tgt.franchises.map(f => f.franchise.name),
             },
-          };
+          }
       }
 
       return {
@@ -479,11 +490,12 @@ export class PlaysService {
         guess: a.guess,
         isCorrect: a.isCorrect,
         playCompleted: a.isCorrect,
-        guessedImageUrl1: gss.imageUrl1 ?? null,
+        guessedImageUrl1:
+          mode === 'Imagem' ? (gss.imageUrl2 ?? null) : (gss.imageUrl1 ?? null),
         comparison,
         triedAt: a.createdAt,
-      };
-    });
+      }
+    })
 
     return {
       playId: play.id,
@@ -493,9 +505,10 @@ export class PlaysService {
         name: play.character.name,
         description: play.character.description,
         imageUrl1: play.character.imageUrl1,
+        imageUrl2: play.character.imageUrl2,
         emojis: play.character.emojis,
       },
       attempts,
-    };
+    }
   }
 }
