@@ -4,6 +4,7 @@ import { AuthModule }     from '../auth/auth.module';
 import { StatsModule }    from '../stats/stats.module';
 import { UsersService }   from './users.service';
 import { UsersController } from './users.controller';
+import { EmailCheckService } from './email-check.service';
 
 @Module({
   imports: [
@@ -11,7 +12,7 @@ import { UsersController } from './users.controller';
     forwardRef(() => AuthModule),
     forwardRef(() => StatsModule),
   ],
-  providers: [UsersService],
+  providers: [UsersService, EmailCheckService],
   controllers: [UsersController],
   exports: [UsersService],
 })

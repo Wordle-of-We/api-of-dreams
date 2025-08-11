@@ -25,7 +25,7 @@ type DailySelectionWithRelations = Prisma.DailySelectionGetPayload<{
 export class DailySelectionController {
   private readonly logger = new Logger(DailySelectionController.name);
 
-  constructor(private readonly svc: DailySelectionService) {}
+  constructor(private readonly svc: DailySelectionService) { }
 
   @Get()
   async findToday(
@@ -91,5 +91,37 @@ export class DailySelectionController {
       modeConfigId: selection.modeConfigId,
       character: selection.character,
     };
+  }
+
+  @Get('calendar')
+  async calendar(
+    @Query('modeId') modeId?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    const m = modeId && !isNaN(+modeId) ? parseInt(modeId, 10) : undefined;
+    return this.svc.getCalendarDays({ modeId: m, from, to });
+  }
+
+  @Get('by-date')
+  async byDate(
+    @Query('modeId') modeId: string,
+    @Query('date') date: string,
+  ) {
+    const m = parseInt(modeId, 10);
+    const sel = await this.svc.getLatestByDateAndMode(m, date);
+    if (!sel) {
+      throw new NotFoundException(`Sem seleção para ${date} no modo ${modeId}`);
+    }
+    return sel;
+  }
+
+  @Post('repair-latest')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  async repairLatest(
+    @Body() body: { date: string; modeId?: number },
+  ) {
+    return this.svc.repairLatestForDay(body.date, body.modeId);
   }
 }

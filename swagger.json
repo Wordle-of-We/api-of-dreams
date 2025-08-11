@@ -32,6 +32,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
           "Users"
         ]
@@ -55,6 +60,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
           "Users"
         ]
@@ -86,6 +96,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
           "Users"
         ]
@@ -107,6 +122,123 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/{id}/role": {
+      "patch": {
+        "operationId": "UsersController_updateRole",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/me": {
+      "patch": {
+        "operationId": "UsersController_updateMe",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      },
+      "get": {
+        "operationId": "UsersController_getMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/{id}/avatar": {
+      "patch": {
+        "operationId": "UsersController_updateAvatar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
           "Users"
         ]
@@ -115,6 +247,34 @@
     "/auth/login": {
       "post": {
         "operationId": "AuthController_login",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/login-admin": {
+      "post": {
+        "operationId": "AuthController_loginAdmin",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
         "parameters": [],
         "responses": {
           "201": {
@@ -143,6 +303,63 @@
     "/auth/logout": {
       "post": {
         "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/verify-email": {
+      "post": {
+        "operationId": "AuthController_verifyEmail",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      },
+      "get": {
+        "operationId": "AuthController_verifyEmailGet",
+        "parameters": [
+          {
+            "name": "email",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "token",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/resend-verification": {
+      "post": {
+        "operationId": "AuthController_resendVerification",
         "parameters": [],
         "responses": {
           "201": {
@@ -238,9 +455,84 @@
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/CreateCharacterDto"
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "emojis": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "nullable": true
+                  },
+                  "gender": {
+                    "type": "string",
+                    "enum": [
+                      "MALE",
+                      "FEMALE",
+                      "OTHER"
+                    ]
+                  },
+                  "race": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "nullable": true
+                  },
+                  "ethnicity": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "nullable": true
+                  },
+                  "hair": {
+                    "type": "string"
+                  },
+                  "aliveStatus": {
+                    "type": "string",
+                    "enum": [
+                      "ALIVE",
+                      "DEAD"
+                    ]
+                  },
+                  "paper": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "nullable": true
+                  },
+                  "franchiseIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "nullable": true
+                  },
+                  "imageUrl1": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "imageUrl2": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "nullable": true
+                  }
+                }
               }
             }
           }
@@ -370,6 +662,27 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "imageUrl1": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -411,6 +724,81 @@
         ]
       }
     },
+    "/characters/{id}/image2": {
+      "patch": {
+        "operationId": "CharactersController_updateImage2",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "imageUrl2": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "characters"
+        ]
+      },
+      "delete": {
+        "operationId": "CharactersController_deleteImage2",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "characters"
+        ]
+      }
+    },
     "/franchises": {
       "post": {
         "operationId": "FranchisesController_create",
@@ -418,9 +806,26 @@
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/CreateFranchiseDto"
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "name"
+                ]
               }
             }
           }
@@ -550,6 +955,27 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "imageUrl": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -680,6 +1106,90 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DailySelection"
+        ]
+      }
+    },
+    "/daily-selection/calendar": {
+      "get": {
+        "operationId": "DailySelectionController_calendar",
+        "parameters": [
+          {
+            "name": "modeId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DailySelection"
+        ]
+      }
+    },
+    "/daily-selection/by-date": {
+      "get": {
+        "operationId": "DailySelectionController_byDate",
+        "parameters": [
+          {
+            "name": "modeId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DailySelection"
+        ]
+      }
+    },
+    "/daily-selection/repair-latest": {
+      "post": {
+        "operationId": "DailySelectionController_repairLatest",
+        "parameters": [],
+        "responses": {
+          "201": {
             "description": ""
           }
         },
@@ -995,95 +1505,51 @@
         "type": "object",
         "properties": {
           "email": {
-            "type": "string",
-            "description": "E-mail único do usuário"
+            "type": "string"
           },
           "password": {
+            "type": "string"
+          },
+          "username": {
             "type": "string",
-            "description": "Senha do usuário (mínimo 6 caracteres)"
+            "description": "Username único (3-20, letras, números e _ . - )"
           }
         },
         "required": [
           "email",
-          "password"
+          "password",
+          "username"
         ]
       },
       "UpdateUserDto": {
         "type": "object",
         "properties": {
           "email": {
-            "type": "string",
-            "description": "E-mail único do usuário"
+            "type": "string"
           },
           "password": {
             "type": "string",
             "description": "Nova senha do usuário (mínimo 6 caracteres)"
+          },
+          "username": {
+            "type": "string",
+            "description": "Username único (3-20, letras, números e _ . - )"
           }
         }
       },
-      "CreateCharacterDto": {
+      "UpdateUserRoleDto": {
         "type": "object",
         "properties": {
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "emojis": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "gender": {
+          "role": {
             "type": "string",
             "enum": [
-              "MALE",
-              "FEMALE",
-              "OTHER"
+              "ADMIN",
+              "USER"
             ]
-          },
-          "race": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "ethnicity": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "hair": {
-            "type": "string"
-          },
-          "aliveStatus": {
-            "type": "string",
-            "enum": [
-              "ALIVE",
-              "DEAD"
-            ]
-          },
-          "franchiseIds": {
-            "type": "array",
-            "items": {
-              "type": "number"
-            }
-          },
-          "imageUrl1": {
-            "type": "string"
-          },
-          "imageUrl2": {
-            "type": "string"
           }
         },
         "required": [
-          "name",
-          "gender",
-          "hair",
-          "aliveStatus"
+          "role"
         ]
       },
       "UpdateCharacterDto": {
@@ -1145,21 +1611,6 @@
           }
         }
       },
-      "CreateFranchiseDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "imageUrl": {
-            "type": "string",
-            "description": "URL pública da capa (opcional)."
-          }
-        },
-        "required": [
-          "name"
-        ]
-      },
       "UpdateFranchiseDto": {
         "type": "object",
         "properties": {
@@ -1184,36 +1635,55 @@
         "type": "object",
         "properties": {
           "name": {
-            "type": "string",
-            "example": "CHARACTERISTICS"
+            "type": "string"
           },
           "description": {
             "type": "string"
           },
           "isActive": {
-            "type": "boolean",
-            "default": true
+            "type": "boolean"
+          },
+          "imageUseSecondImage": {
+            "type": "boolean"
+          },
+          "imageBlurStart": {
+            "type": "number"
+          },
+          "imageBlurStep": {
+            "type": "number"
+          },
+          "imageBlurMin": {
+            "type": "number"
           }
         },
         "required": [
           "name",
-          "description",
-          "isActive"
+          "description"
         ]
       },
       "UpdateGameModeDto": {
         "type": "object",
         "properties": {
           "name": {
-            "type": "string",
-            "example": "CHARACTERISTICS"
+            "type": "string"
           },
           "description": {
             "type": "string"
           },
           "isActive": {
-            "type": "boolean",
-            "default": true
+            "type": "boolean"
+          },
+          "imageUseSecondImage": {
+            "type": "boolean"
+          },
+          "imageBlurStart": {
+            "type": "number"
+          },
+          "imageBlurStep": {
+            "type": "number"
+          },
+          "imageBlurMin": {
+            "type": "number"
           }
         }
       }

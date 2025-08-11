@@ -23,22 +23,38 @@ export class PlaysService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly statsSnapshot: StatsSnapshotService,
-  ) {}
+  ) { }
 
-  async startPlay(userId: number | undefined, modeConfigId: number) {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+  private dayStartFromYYYYMMDD(date?: string): Date {
+    if (!date) {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+    return new Date(`${date}T00:00:00-03:00`);
+  }
+
+  async startPlay(
+    userId: number | undefined,
+    modeConfigId: number,
+    date?: string,
+  ) {
+    const dayStart = this.dayStartFromYYYYMMDD(date);
 
     if (userId) {
       const existing = await this.prisma.play.findFirst({
-        where: { userId, modeConfigId, createdAt: { gte: today } },
-      })
+        where: {
+          userId,
+          modeConfigId,
+          selectionDate: dayStart,
+        },
+      });
       if (existing) {
         const full = await this.prisma.play.findUnique({
           where: { id: existing.id },
-          include: { character: true },
-        })
-        if (!full) throw new NotFoundException('Partida não encontrada')
+          include: { character: true, modeConfig: true },
+        });
+        if (!full) throw new NotFoundException('Partida não encontrada');
         return {
           playId: full.id,
           completed: full.completed,
@@ -51,49 +67,61 @@ export class PlaysService {
             imageUrl2: full.character.imageUrl2,
             emojis: full.character.emojis,
           },
-        }
+          modeConfig: {
+            id: full.modeConfig.id,
+            name: full.modeConfig.name,
+            imageUseSecondImage: (full.modeConfig as any).imageUseSecondImage,
+            imageBlurStart: (full.modeConfig as any).imageBlurStart,
+            imageBlurStep: (full.modeConfig as any).imageBlurStep,
+            imageBlurMin: (full.modeConfig as any).imageBlurMin,
+          },
+        };
       }
     }
 
     const sel = await this.prisma.dailySelection.findFirst({
-      where: { modeConfigId, date: today },
+      where: { modeConfigId, date: dayStart, latest: true },
       orderBy: { id: 'desc' },
-    })
-    if (!sel) throw new NotFoundException('Nenhum personagem selecionado hoje')
+      include: { character: true, modeConfig: true },
+    });
+    if (!sel) throw new NotFoundException('Nenhum personagem selecionado neste dia');
 
-    const guestId = userId ? null : uuidv4()
+    const guestId = userId ? null : uuidv4();
     const play = await this.prisma.play.create({
       data: {
         userId,
         guestId,
         modeConfigId,
         characterId: sel.characterId,
+        selectionDate: dayStart,
       },
-    })
+    });
 
-    await this.statsSnapshot.syncDay()
-
-    const full = await this.prisma.play.findUnique({
-      where: { id: play.id },
-      include: { character: true },
-    })
-    if (!full) throw new NotFoundException('Partida não encontrada')
+    await this.statsSnapshot.syncDay();
 
     const base = {
-      playId: full.id,
-      completed: full.completed,
-      attemptsCount: full.attemptsCount,
+      playId: play.id,
+      completed: play.completed,
+      attemptsCount: play.attemptsCount,
       character: {
-        id: full.character.id,
-        name: full.character.name,
-        description: full.character.description,
-        imageUrl1: full.character.imageUrl1,
-        imageUrl2: full.character.imageUrl2,
-        emojis: full.character.emojis,
+        id: sel.character.id,
+        name: sel.character.name,
+        description: sel.character.description,
+        imageUrl1: sel.character.imageUrl1,
+        imageUrl2: sel.character.imageUrl2,
+        emojis: sel.character.emojis,
       },
-    }
+      modeConfig: {
+        id: sel.modeConfig.id,
+        name: sel.modeConfig.name,
+        imageUseSecondImage: (sel.modeConfig as any).imageUseSecondImage,
+        imageBlurStart: (sel.modeConfig as any).imageBlurStart,
+        imageBlurStep: (sel.modeConfig as any).imageBlurStep,
+        imageBlurMin: (sel.modeConfig as any).imageBlurMin,
+      },
+    };
 
-    return userId ? base : { ...base, guestId }
+    return userId ? base : { ...base, guestId };
   }
 
   async makeGuess(

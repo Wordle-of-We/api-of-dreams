@@ -13,13 +13,17 @@ function startOfToday(): Date {
   return d;
 }
 
+function dayStartFromYYYYMMDD(date: string): Date {
+  return new Date(`${date}T00:00:00-03:00`);
+}
+
 @Injectable()
 export class DailySelectionService {
   private readonly logger = new Logger(DailySelectionService.name);
 
   constructor(private readonly prisma: PrismaService) { }
 
-  @Cron('00 07 * * *', { timeZone: 'America/Fortaleza' })
+  @Cron('00 00 * * *', { timeZone: 'America/Fortaleza' })
   async triggerGenerateRoute() {
     await this.handleDailyDraw();
   }
@@ -133,7 +137,6 @@ export class DailySelectionService {
     });
     const usedIds = existingToday.map(sel => sel.characterId);
 
-    // filtro base
     const where: any = {
       AND: [
         { id: { notIn: usedIds } },
@@ -150,7 +153,6 @@ export class DailySelectionService {
       ],
     };
 
-    // 👇 para o modo "Imagem", exigir imageUrl2
     if (mode.name === 'Imagem') {
       where.AND.push({ imageUrl2: { not: null } });
     }
@@ -220,5 +222,85 @@ export class DailySelectionService {
       where: { modeConfigId: modeId, latest: true },
       include: { character: true },
     });
+  }
+
+  async getCalendarDays(params: { modeId?: number; from?: string; to?: string }) {
+    const where: any = { latest: true };
+    if (params.modeId) where.modeConfigId = params.modeId;
+
+    if (params.from || params.to) {
+      const from = params.from ? dayStartFromYYYYMMDD(params.from) : undefined;
+      const to = params.to ? dayStartFromYYYYMMDD(params.to) : undefined;
+      where.date = {
+        ...(from ? { gte: from } : {}),
+        ...(to ? { lte: to } : {}),
+      };
+    }
+
+    const rows = await this.prisma.dailySelection.findMany({
+      where,
+      select: { date: true, modeConfigId: true },
+      orderBy: [{ date: 'asc' }, { modeConfigId: 'asc' }],
+    });
+
+    const map = new Map<string, number[]>();
+    for (const r of rows) {
+      const key = r.date.toISOString().slice(0, 10);
+      const arr = map.get(key) ?? [];
+      arr.push(r.modeConfigId);
+      map.set(key, arr);
+    }
+
+    return Array.from(map.entries()).map(([day, modes]) => ({ day, modes }));
+  }
+
+  async getLatestByDateAndMode(modeId: number, date: string) {
+    const day = dayStartFromYYYYMMDD(date);
+    const sel = await this.prisma.dailySelection.findFirst({
+      where: { modeConfigId: modeId, date: day, latest: true },
+      include: { character: true, modeConfig: true },
+      orderBy: { id: 'desc' },
+    });
+    return sel;
+  }
+
+  async repairLatestForDay(date: string, modeId?: number) {
+    const day = dayStartFromYYYYMMDD(date);
+
+    const where: any = { date: day, ...(modeId ? { modeConfigId: modeId } : {}) };
+
+    const groups = await this.prisma.dailySelection.findMany({
+      where,
+      orderBy: { id: 'asc' },
+    });
+
+    const byMode = new Map<number, typeof groups>();
+    for (const g of groups) {
+      const arr = byMode.get(g.modeConfigId) ?? [];
+      arr.push(g);
+      byMode.set(g.modeConfigId, arr);
+    }
+
+    for (const [m, arr] of byMode.entries()) {
+      if (arr.length === 0) continue;
+      const last = arr[arr.length - 1];
+      const idsToLatestFalse = arr.filter(x => x.id !== last.id && x.latest).map(x => x.id);
+      const needsLastTrue = !last.latest;
+
+      if (idsToLatestFalse.length) {
+        await this.prisma.dailySelection.updateMany({
+          where: { id: { in: idsToLatestFalse } },
+          data: { latest: false },
+        });
+      }
+      if (needsLastTrue) {
+        await this.prisma.dailySelection.update({
+          where: { id: last.id },
+          data: { latest: true },
+        });
+      }
+    }
+
+    return { repaired: true };
   }
 }

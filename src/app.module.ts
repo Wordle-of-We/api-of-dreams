@@ -12,6 +12,7 @@ import { PlaysModule } from './plays/plays.module';
 import { StatsModule } from './stats/stats.module';
 import { GameModeModule } from './game-mode/game-mode.module';
 import { AdminModule } from './admin/admin.module';
+import { CommonModule } from 'common/common.module';
 
 @Module({
   imports: [
@@ -19,6 +20,8 @@ import { AdminModule } from './admin/admin.module';
 
     PrismaModule,
     ScheduleModule.forRoot(),
+
+    CommonModule,
 
     UsersModule,
     CharactersModule,

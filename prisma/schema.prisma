@@ -116,11 +116,15 @@ model Play {
   createdAt     DateTime @default(now())
 
   completedAt   DateTime?
+  selectionDate DateTime?
 
   user       User?      @relation(fields: [userId], references: [id])
   modeConfig ModeConfig @relation(fields: [modeConfigId], references: [id])
   character  Character  @relation(fields: [characterId], references: [id])
   attempts   Attempt[]
+
+  @@index([modeConfigId, selectionDate])
+  @@index([userId, modeConfigId, selectionDate])
 }
 
 model Attempt {
@@ -152,6 +156,8 @@ model DailySelection {
   character    Character  @relation(fields: [characterId], references: [id])
   characterId  Int
   latest       Boolean    @default(true)
+
+  @@index([date, modeConfigId, latest])
 }
 
 model AccessLog {

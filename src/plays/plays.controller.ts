@@ -19,7 +19,7 @@ interface RequestWithUser extends Request {
 
 @Controller('plays')
 export class PlaysController {
-  constructor(private readonly playsService: PlaysService) {}
+  constructor(private readonly playsService: PlaysService) { }
 
   @Post('start')
   @UseGuards(OptionalAuthGuard)
@@ -27,7 +27,7 @@ export class PlaysController {
     @Req() req: RequestWithUser,
     @Body() dto: StartPlayDto,
   ) {
-    return this.playsService.startPlay(req.user?.userId, dto.modeConfigId);
+    return this.playsService.startPlay(req.user?.userId, dto.modeConfigId, dto.date);
   }
 
   @Post(':playId/guess')
