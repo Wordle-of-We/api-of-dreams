@@ -21,6 +21,8 @@ const safeUserSelect = {
   createdAt: true,
   updatedAt: true,
   isEmailVerified: true,
+  username: true,
+  avatarIconUrl: true,
 } as const;
 
 @Injectable()
@@ -29,21 +31,30 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly emailCheck: EmailCheckService,
     private readonly mailer: MailerService,
-  ) { }
+  ) {}
 
   private generateVerificationPair() {
     const token = randomBytes(32).toString('hex');
     const tokenHash = createHash('sha256').update(token).digest('hex');
-    const expires = new Date(Date.now() + 1000 * 60 * 60 * 24);
+    const expires = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24h
     return { token, tokenHash, expires };
   }
 
+  private defaultAvatarFromUsername(username: string) {
+    return `https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(
+      username,
+    )}`;
+  }
+
   async create(data: CreateUserDto) {
-    const exists = await this.prisma.user.findUnique({
-      where: { email: data.email },
+    const existing = await this.prisma.user.findFirst({
+      where: { OR: [{ email: data.email }, { username: data.username }] },
     });
-    if (exists) {
-      throw new BadRequestException('Já existe um usuário com este e-mail.');
+    if (existing) {
+      if (existing.email === data.email) {
+        throw new BadRequestException('Já existe um usuário com este e-mail.');
+      }
+      throw new BadRequestException('Este username já está em uso, escolha outro.');
     }
 
     const hasMx = await this.emailCheck.hasValidMx(data.email);
@@ -54,7 +65,13 @@ export class UsersService {
     const hashed = await bcrypt.hash(data.password, SALT_ROUNDS);
 
     const created = await this.prisma.user.create({
-      data: { email: data.email, password: hashed, role: Role.USER },
+      data: {
+        email: data.email,
+        password: hashed,
+        role: Role.USER,
+        username: data.username,
+        avatarIconUrl: this.defaultAvatarFromUsername(data.username),
+      },
       select: { id: true, email: true },
     });
 
@@ -100,6 +117,7 @@ export class UsersService {
     if (!current) throw new NotFoundException('Usuário não encontrado.');
 
     const updateData: Prisma.UserUpdateInput = {};
+    const anyData = data as any;
 
     if (data.email && data.email !== current.email) {
       const other = await this.prisma.user.findUnique({
@@ -115,7 +133,21 @@ export class UsersService {
       (updateData as any).emailVerifyToken = tokenHash;
       (updateData as any).emailVerifyExpires = expires;
 
-      this.mailer.sendEmailVerification(data.email, token).catch(() => { });
+      this.mailer.sendEmailVerification(data.email, token).catch(() => {});
+    }
+
+    if (anyData.username && anyData.username !== current.username) {
+      const existsUsername = await this.prisma.user.findUnique({
+        where: { username: anyData.username },
+      });
+      if (existsUsername && existsUsername.id !== id) {
+        throw new BadRequestException('Este username já está em uso, escolha outro.');
+      }
+      updateData.username = anyData.username;
+    }
+
+    if (anyData.avatarIconUrl) {
+      updateData.avatarIconUrl = anyData.avatarIconUrl;
     }
 
     if (data.password) {
@@ -184,13 +216,20 @@ export class UsersService {
   }
 
   async updateRole(id: number, role: Role) {
-    await this.prisma.user.findUniqueOrThrow({ where: { id } });
+    const target = await this.prisma.user.findUnique({ where: { id } });
+    if (!target) throw new NotFoundException('Usuário não encontrado.');
+
+    if (target.role === Role.ADMIN && role !== Role.ADMIN) {
+      const admins = await this.prisma.user.count({ where: { role: Role.ADMIN } });
+      if (admins <= 1) {
+        throw new BadRequestException('Não é possível rebaixar o último administrador.');
+      }
+    }
+
     return this.prisma.user.update({
       where: { id },
       data: { role },
-      select: {
-        ...safeUserSelect,
-      },
+      select: safeUserSelect,
     });
   }
 }

@@ -160,7 +160,7 @@ export class PlaysService {
       where: { id: playId },
       data: {
         attemptsCount: { increment: 1 },
-        ...(isCorrect ? { completed: true } : {}),
+        ...(isCorrect ? { completed: true, completedAt: new Date() } : {}),
       },
     })
 

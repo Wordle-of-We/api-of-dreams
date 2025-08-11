@@ -17,18 +17,18 @@ import { Role } from '@prisma/client';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserRoleDto } from './dto/update-role.dto';
 import { JwtAuthGuard } from '../../src/auth/guard/jwt-auth.guard';
 import { RolesGuard } from '../../src/auth/guard/roles.guard';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 interface RequestWithUser extends Request {
   user: { userId: number; role: Role };
 }
 
-@ApiTags('users')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Post()
   async create(@Body() dto: CreateUserDto) {
@@ -68,9 +68,9 @@ export class UsersController {
   @ApiBearerAuth()
   updateRole(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { role: Role },
+    @Body() dto: UpdateUserRoleDto,
   ) {
-    return this.usersService.updateRole(id, body.role);
+    return this.usersService.updateRole(id, dto.role);
   }
 
   @Delete(':id')
@@ -83,9 +83,44 @@ export class UsersController {
   ) {
     const { userId, role } = req.user;
     if (userId !== id && role !== Role.ADMIN) {
-      throw new ForbiddenException('Você não tem permissão para excluir este usuário.');
+      throw new ForbiddenException(
+        'Você não tem permissão para excluir este usuário.',
+      );
     }
     await this.usersService.remove(id);
     return { message: 'Usuário removido com sucesso.' };
+  }
+
+  @Patch('me')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.USER)
+  @ApiBearerAuth()
+  updateMe(
+    @Req() req: RequestWithUser,
+    @Body() dto: UpdateUserDto,
+  ) {
+    return this.usersService.update(req.user.userId, dto);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  getMe(@Req() req: RequestWithUser) {
+    return this.usersService.findOne(req.user.userId);
+  }
+
+  @Patch(':id/avatar')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.USER)
+  @ApiBearerAuth()
+  updateAvatar(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: RequestWithUser,
+    @Body() body: { avatarIconUrl: string },
+  ) {
+    if (req.user.role !== Role.ADMIN && req.user.userId !== id) {
+      throw new ForbiddenException('Sem permissão para alterar este avatar.');
+    }
+    return this.usersService.update(id, { avatarIconUrl: body.avatarIconUrl });
   }
 }
