@@ -85,22 +85,16 @@ export class CharactersService {
     };
   }
 
-  async update(
-    id: number,
-    dto: UpdateCharacterDto,
-  ): Promise<Character> {
-    await this.findOne(id);
+  async update(id: number, dto: UpdateCharacterDto): Promise<Character> {
+    await this.findOne(id)
 
-    const { franchiseIds, ...rest } = dto as any;
+    const { franchiseIds, imageUrl1: _ignore1, imageUrl2: _ignore2, ...rest } = dto as any
 
     return this.prisma.character.update({
       where: { id },
       data: {
         ...rest,
-        ...(dto.paper !== undefined
-          ? { paper: { set: dto.paper } }
-          : {}),
-        imageUrl2: dto.imageUrl2,
+        ...(rest.paper !== undefined ? { paper: { set: rest.paper } } : {}),
         franchises: franchiseIds
           ? {
             deleteMany: {},
@@ -110,10 +104,8 @@ export class CharactersService {
           }
           : undefined,
       },
-      include: {
-        franchises: { include: { franchise: true } },
-      },
-    });
+      include: { franchises: { include: { franchise: true } } },
+    })
   }
 
   async updateImage(

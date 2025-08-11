@@ -204,7 +204,7 @@ export class PlaysService {
           },
         }
         break
-      case 'Emoji': // compat: se algum modo antigo usar "Emoji" no singular
+      case 'Emoji':
       case 'Emojis':
         comparison = {
           emojis: {
