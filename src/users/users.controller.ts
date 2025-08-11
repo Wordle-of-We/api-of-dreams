@@ -37,9 +37,9 @@ export class UsersController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  getMe(@Req() req: RequestWithUser) {
-    return this.usersService.findOne(req.user.userId);
+  async me(@Req() req: any) {
+    const { userId } = req.user;
+    return this.usersService.findOne(userId);
   }
 
   @Patch('me')

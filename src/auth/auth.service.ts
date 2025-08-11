@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -17,15 +17,12 @@ const REFRESH_TTL_MS =
     ? Number(process.env.REFRESH_TTL_DAYS) * 24 * 60 * 60 * 1000
     : 7 * 24 * 60 * 60 * 1000;
 
-const REQUIRE_EMAIL_VERIFIED_FOR_LOGIN =
-  (process.env.REQUIRE_EMAIL_VERIFIED_FOR_LOGIN ?? 'true') !== 'false';
-
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-  ) { }
+  ) {}
 
   private signAccessToken(user: { id: number; email: string; role: Role }) {
     const payload = { sub: user.id, email: user.email, role: user.role };
@@ -50,7 +47,11 @@ export class AuthService {
     const u = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!u) throw new UnauthorizedException('Usuário não encontrado');
 
-    const accessToken = this.signAccessToken({ id: u.id, email: u.email, role: u.role });
+    const accessToken = this.signAccessToken({
+      id: u.id,
+      email: u.email,
+      role: u.role,
+    });
     const { token: refreshToken, hash, expires } = this.generateRefreshPair();
     await this.persistRefresh(u.id, hash, expires);
 
@@ -61,7 +62,7 @@ export class AuthService {
         id: u.id,
         email: u.email,
         role: u.role,
-        isEmailVerified: !!u.isEmailVerified,
+        isEmailVerified: !!u.isEmailVerified
       },
     };
   }
@@ -71,13 +72,6 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('Credenciais inválidas.');
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) throw new UnauthorizedException('Credenciais inválidas.');
-
-    if (REQUIRE_EMAIL_VERIFIED_FOR_LOGIN && !user.isEmailVerified) {
-      throw new UnauthorizedException(
-        'E-mail não verificado. Verifique sua caixa de entrada ou reenvie o e-mail.'
-      );
-    }
-
     return this.buildAuthResponse(user.id);
   }
 
@@ -88,17 +82,13 @@ export class AuthService {
     }
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) throw new UnauthorizedException('Credenciais inválidas.');
-
-    if (REQUIRE_EMAIL_VERIFIED_FOR_LOGIN && !user.isEmailVerified) {
-      throw new UnauthorizedException(
-        'E-mail não verificado. Verifique sua caixa de entrada ou reenvie o e-mail.'
-      );
-    }
-
     return this.buildAuthResponse(user.id);
   }
 
-  async refresh(email: string, refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+  async refresh(
+    email: string,
+    refreshToken: string,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user || !user.refreshTokenHash || !user.refreshTokenExpires) {
       throw new UnauthorizedException('Refresh token inválido.');
@@ -112,7 +102,11 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token inválido.');
     }
 
-    const accessToken = this.signAccessToken({ id: user.id, email: user.email, role: user.role });
+    const accessToken = this.signAccessToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
     const { token: newRt, hash, expires } = this.generateRefreshPair();
     await this.persistRefresh(user.id, hash, expires);
 

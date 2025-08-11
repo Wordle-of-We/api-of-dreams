@@ -44,18 +44,13 @@
     },
     "/users/me": {
       "get": {
-        "operationId": "UsersController_getMe",
+        "operationId": "UsersController_me",
         "parameters": [],
         "responses": {
           "200": {
             "description": ""
           }
         },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
         "tags": [
           "Users"
         ]
@@ -303,63 +298,6 @@
     "/auth/logout": {
       "post": {
         "operationId": "AuthController_logout",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Auth"
-        ]
-      }
-    },
-    "/auth/verify-email": {
-      "post": {
-        "operationId": "AuthController_verifyEmail",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Auth"
-        ]
-      },
-      "get": {
-        "operationId": "AuthController_verifyEmailGet",
-        "parameters": [
-          {
-            "name": "email",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "token",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Auth"
-        ]
-      }
-    },
-    "/auth/resend-verification": {
-      "post": {
-        "operationId": "AuthController_resendVerification",
         "parameters": [],
         "responses": {
           "201": {
@@ -1201,7 +1139,16 @@
     "/plays/start": {
       "post": {
         "operationId": "PlaysController_start",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-guest-id",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1222,6 +1169,37 @@
         ]
       }
     },
+    "/plays/progress/{modeConfigId}": {
+      "get": {
+        "operationId": "PlaysController_getProgress",
+        "parameters": [
+          {
+            "name": "modeConfigId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "x-guest-id",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Plays"
+        ]
+      }
+    },
     "/plays/{playId}/guess": {
       "post": {
         "operationId": "PlaysController_guess",
@@ -1232,6 +1210,14 @@
             "in": "path",
             "schema": {
               "type": "number"
+            }
+          },
+          {
+            "name": "x-guest-id",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -1266,28 +1252,13 @@
             "schema": {
               "type": "number"
             }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Plays"
-        ]
-      }
-    },
-    "/plays/progress/{modeConfigId}": {
-      "get": {
-        "operationId": "PlaysController_getProgress",
-        "parameters": [
+          },
           {
-            "name": "modeConfigId",
+            "name": "x-guest-id",
             "required": true,
-            "in": "path",
+            "in": "header",
             "schema": {
-              "type": "number"
+              "type": "string"
             }
           }
         ],
@@ -1311,6 +1282,14 @@
             "in": "path",
             "schema": {
               "type": "number"
+            }
+          },
+          {
+            "name": "x-guest-id",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
             }
           }
         ],
