@@ -23,6 +23,12 @@ enum AliveStatus {
   DEAD
 }
 
+enum LeaderboardPeriod {
+  DAILY
+  WEEKLY
+  ALL_TIME
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
@@ -197,4 +203,22 @@ model ModeDailyStats {
   overviewId       Int
 
   @@unique([date, modeConfigId])
+}
+
+model LeaderboardEntry {
+  id           Int               @id @default(autoincrement())
+  period       LeaderboardPeriod
+  date         DateTime?
+  weekStart    DateTime?
+  modeConfigId Int?
+  userId       Int
+  score        Int
+  games        Int
+  rank         Int
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@unique([period, date, weekStart, modeConfigId, userId])
+  @@index([period, date, modeConfigId])
+  @@index([period, weekStart, modeConfigId])
 }

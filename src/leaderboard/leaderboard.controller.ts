@@ -1,4 +1,4 @@
-import { Controller, Get, Query, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { LeaderboardService } from './leaderboard.service';
 
 @Controller('leaderboard')
@@ -6,13 +6,17 @@ export class LeaderboardController {
   constructor(private readonly svc: LeaderboardService) {}
 
   @Get('daily')
-  async daily(
-    @Query('modeId') modeId?: string,
-    @Query('date') date?: string,
-  ) {
+  async daily(@Query('modeId') modeId?: string, @Query('date') date?: string) {
     const d = date ? new Date(date) : new Date();
     const m = modeId && !isNaN(+modeId) ? parseInt(modeId, 10) : undefined;
     return this.svc.getDailyRanking(d, m);
+  }
+
+  @Get('weekly')
+  async weekly(@Query('modeId') modeId?: string, @Query('date') date?: string) {
+    const d = date ? new Date(date) : new Date(); // qualquer dia da semana alvo
+    const m = modeId && !isNaN(+modeId) ? parseInt(modeId, 10) : undefined;
+    return this.svc.getWeeklyRanking(d, m);
   }
 
   @Get('lifetime')
