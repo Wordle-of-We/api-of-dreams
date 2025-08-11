@@ -17,7 +17,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly usersService: UsersService,
     private readonly config: ConfigService,
-  ) {}
+  ) { }
 
   @Post('login')
   async login(
@@ -64,15 +64,12 @@ export class AuthController {
 
   @Get('verify-email')
   @Redirect(undefined, 302)
-  async verifyEmailGet(
-    @Query('email') email: string,
-    @Query('token') token: string
-  ) {
+  async verifyEmailGet(@Query('email') email: string, @Query('token') token: string) {
     try {
       await this.usersService.verifyEmail(email, token);
-      return { url: `${this.config.get('APP_URL')}/login?verified=1` };
+      return { url: `${this.config.get('FRONTEND_URL')}/login?verified=1` };
     } catch {
-      return { url: `${this.config.get('APP_URL')}/login?verified=0` };
+      return { url: `${this.config.get('FRONTEND_URL')}/login?verified=0` };
     }
   }
 

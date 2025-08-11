@@ -31,7 +31,7 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly emailCheck: EmailCheckService,
     private readonly mailer: MailerService,
-  ) {}
+  ) { }
 
   private generateVerificationPair() {
     const token = randomBytes(32).toString('hex');
@@ -84,7 +84,11 @@ export class UsersService {
         emailVerifyExpires: expires,
       },
     });
-    await this.mailer.sendEmailVerification(created.email, token);
+
+    try {
+      await this.mailer.sendEmailVerification(created.email, token);
+    } catch {
+    }
 
     const safe = await this.prisma.user.findUnique({
       where: { id: created.id },
@@ -133,7 +137,7 @@ export class UsersService {
       (updateData as any).emailVerifyToken = tokenHash;
       (updateData as any).emailVerifyExpires = expires;
 
-      this.mailer.sendEmailVerification(data.email, token).catch(() => {});
+      this.mailer.sendEmailVerification(data.email, token).catch(() => { });
     }
 
     if (anyData.username && anyData.username !== current.username) {

@@ -28,11 +28,26 @@ interface RequestWithUser extends Request {
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
 
   @Post()
   async create(@Body() dto: CreateUserDto) {
     return this.usersService.create(dto);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  getMe(@Req() req: RequestWithUser) {
+    return this.usersService.findOne(req.user.userId);
+  }
+
+  @Patch('me')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.USER)
+  @ApiBearerAuth()
+  updateMe(@Req() req: RequestWithUser, @Body() dto: UpdateUserDto) {
+    return this.usersService.update(req.user.userId, dto);
   }
 
   @Get()
@@ -55,10 +70,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateUserDto,
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateUserDto) {
     return this.usersService.update(id, dto);
   }
 
@@ -71,42 +83,6 @@ export class UsersController {
     @Body() dto: UpdateUserRoleDto,
   ) {
     return this.usersService.updateRole(id, dto.role);
-  }
-
-  @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.USER)
-  @ApiBearerAuth()
-  async remove(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: RequestWithUser,
-  ) {
-    const { userId, role } = req.user;
-    if (userId !== id && role !== Role.ADMIN) {
-      throw new ForbiddenException(
-        'Você não tem permissão para excluir este usuário.',
-      );
-    }
-    await this.usersService.remove(id);
-    return { message: 'Usuário removido com sucesso.' };
-  }
-
-  @Patch('me')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.USER)
-  @ApiBearerAuth()
-  updateMe(
-    @Req() req: RequestWithUser,
-    @Body() dto: UpdateUserDto,
-  ) {
-    return this.usersService.update(req.user.userId, dto);
-  }
-
-  @Get('me')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  getMe(@Req() req: RequestWithUser) {
-    return this.usersService.findOne(req.user.userId);
   }
 
   @Patch(':id/avatar')
@@ -122,5 +98,21 @@ export class UsersController {
       throw new ForbiddenException('Sem permissão para alterar este avatar.');
     }
     return this.usersService.update(id, { avatarIconUrl: body.avatarIconUrl });
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.USER)
+  @ApiBearerAuth()
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: RequestWithUser,
+  ) {
+    const { userId, role } = req.user;
+    if (userId !== id && role !== Role.ADMIN) {
+      throw new ForbiddenException('Você não tem permissão para excluir este usuário.');
+    }
+    await this.usersService.remove(id);
+    return { message: 'Usuário removido com sucesso.' };
   }
 }
