@@ -208,9 +208,12 @@ model ModeDailyStats {
 model LeaderboardEntry {
   id           Int               @id @default(autoincrement())
   period       LeaderboardPeriod
+  scopeKey     String           
+
   date         DateTime?
   weekStart    DateTime?
   modeConfigId Int?
+
   userId       Int
   score        Int
   games        Int
@@ -218,7 +221,6 @@ model LeaderboardEntry {
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 
-  @@unique([period, date, weekStart, modeConfigId, userId])
-  @@index([period, date, modeConfigId])
-  @@index([period, weekStart, modeConfigId])
+  @@unique([scopeKey, userId])
+  @@index([period, scopeKey])
 }

@@ -7,11 +7,13 @@ function startOfDay(d = new Date()) {
   x.setHours(0, 0, 0, 0);
   return x;
 }
+
 function endOfDay(d = new Date()) {
   const x = startOfDay(d);
   x.setDate(x.getDate() + 1);
   return x;
 }
+
 function startOfWeek(d = new Date()) {
   const x = startOfDay(d);
   const day = x.getDay();
@@ -19,11 +21,19 @@ function startOfWeek(d = new Date()) {
   x.setDate(x.getDate() - delta);
   return x;
 }
+
 function endOfWeek(d = new Date()) {
   const s = startOfWeek(d);
   const e = new Date(s);
   e.setDate(e.getDate() + 7);
   return e;
+}
+
+function ymdLocal(d: Date) {
+  const y = d.getFullYear();
+  const m = `${d.getMonth() + 1}`.padStart(2, '0');
+  const dd = `${d.getDate()}`.padStart(2, '0');
+  return `${y}-${m}-${dd}`;
 }
 
 type ScoreBreakdown = {
@@ -34,7 +44,7 @@ type ScoreBreakdown = {
 
 @Injectable()
 export class LeaderboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   private readonly ATTEMPT_WEIGHT = 120;
   private readonly TIME_WEIGHT = 0.2;
@@ -112,87 +122,79 @@ export class LeaderboardService {
       games: agg.games,
     }));
     arr.sort((a, b) => b.score - a.score);
-
     return arr.map((r, i) => ({ ...r, rank: i + 1 }));
   }
 
-  private async upsertSnapshotRow(params: {
+  private async writeSnapshot(params: {
     period: LeaderboardPeriod;
-    date?: Date | null;
-    weekStart?: Date | null;
-    modeConfigId?: number | null;
-    userId: number;
-    score: number;
-    games: number;
-    rank: number;
+    scopeKey: string;
+    meta: { date?: Date | null; weekStart?: Date | null; modeConfigId?: number | null };
+    rows: { userId: number; score: number; games: number; rank: number }[];
   }) {
-    const { period, date = null, weekStart = null, modeConfigId = null, userId, score, games, rank } =
-      params;
+    const { period, scopeKey, meta, rows } = params;
 
-    await this.prisma.leaderboardEntry.upsert({
-      where: {
-        period_date_weekStart_modeConfigId_userId: {
-          period,
-          date,
-          weekStart,
-          modeConfigId,
-          userId,
-        },
-      },
-      create: { period, date, weekStart, modeConfigId, userId, score, games, rank },
-      update: { score, games, rank },
+    await this.prisma.leaderboardEntry.deleteMany({
+      where: { period, scopeKey },
     });
+
+    if (!rows.length) return rows;
+
+    await this.prisma.leaderboardEntry.createMany({
+      data: rows.map((r) => ({
+        period,
+        scopeKey,
+        date: meta.date ?? null,
+        weekStart: meta.weekStart ?? null,
+        modeConfigId: meta.modeConfigId ?? null,
+        userId: r.userId,
+        score: r.score,
+        games: r.games,
+        rank: r.rank,
+      })),
+    });
+
+    return rows;
   }
 
   async buildDailySnapshot(date = new Date(), modeId?: number) {
     const dayStart = startOfDay(date);
     const dayEnd = endOfDay(date);
-
     const where: Prisma.PlayWhereInput = {
       createdAt: { gte: dayStart, lt: dayEnd },
       ...(modeId ? { modeConfigId: modeId } : {}),
     };
 
     const rows = await this.aggregateScores(where);
+    const scopeKey = `DAILY:${ymdLocal(dayStart)}${modeId ? `:m=${modeId}` : ''}`;
 
-    for (const r of rows) {
-      await this.upsertSnapshotRow({
-        period: 'DAILY',
-        date: dayStart,
-        weekStart: null,
-        modeConfigId: modeId ?? null,
-        userId: r.userId,
-        score: r.score,
-        games: r.games,
-        rank: r.rank,
-      });
-    }
+    await this.writeSnapshot({
+      period: 'DAILY',
+      scopeKey,
+      meta: { date: dayStart, weekStart: null, modeConfigId: modeId ?? null },
+      rows,
+    });
+
     return rows;
   }
 
   async buildWeeklySnapshot(date = new Date(), modeId?: number) {
     const wkStart = startOfWeek(date);
     const wkEnd = endOfWeek(date);
-
     const where: Prisma.PlayWhereInput = {
       createdAt: { gte: wkStart, lt: wkEnd },
       ...(modeId ? { modeConfigId: modeId } : {}),
     };
 
     const rows = await this.aggregateScores(where);
+    const scopeKey = `WEEKLY:${ymdLocal(wkStart)}${modeId ? `:m=${modeId}` : ''}`;
 
-    for (const r of rows) {
-      await this.upsertSnapshotRow({
-        period: 'WEEKLY',
-        date: null,
-        weekStart: wkStart,
-        modeConfigId: modeId ?? null,
-        userId: r.userId,
-        score: r.score,
-        games: r.games,
-        rank: r.rank,
-      });
-    }
+    await this.writeSnapshot({
+      period: 'WEEKLY',
+      scopeKey,
+      meta: { date: null, weekStart: wkStart, modeConfigId: modeId ?? null },
+      rows,
+    });
+
     return rows;
   }
 
@@ -200,34 +202,33 @@ export class LeaderboardService {
     const where: Prisma.PlayWhereInput = {
       ...(modeId ? { modeConfigId: modeId } : {}),
     };
-    const rows = await this.aggregateScores(where);
 
-    for (const r of rows) {
-      await this.upsertSnapshotRow({
-        period: 'ALL_TIME',
-        date: null,
-        weekStart: null,
-        modeConfigId: modeId ?? null,
-        userId: r.userId,
-        score: r.score,
-        games: r.games,
-        rank: r.rank,
-      });
-    }
+    const rows = await this.aggregateScores(where);
+    const scopeKey = `ALL_TIME${modeId ? `:m=${modeId}` : ''}`;
+
+    await this.writeSnapshot({
+      period: 'ALL_TIME',
+      scopeKey,
+      meta: { date: null, weekStart: null, modeConfigId: modeId ?? null },
+      rows,
+    });
+
     return rows;
   }
 
   async getDailyRanking(date = new Date(), modeId?: number) {
     const d = startOfDay(date);
+    const scopeKey = `DAILY:${ymdLocal(d)}${modeId ? `:m=${modeId}` : ''}`;
+
     let entries = await this.prisma.leaderboardEntry.findMany({
-      where: { period: 'DAILY', date: d, modeConfigId: modeId ?? null },
+      where: { period: 'DAILY', scopeKey },
       orderBy: { rank: 'asc' },
     });
 
     if (entries.length === 0) {
       await this.buildDailySnapshot(d, modeId);
       entries = await this.prisma.leaderboardEntry.findMany({
-        where: { period: 'DAILY', date: d, modeConfigId: modeId ?? null },
+        where: { period: 'DAILY', scopeKey },
         orderBy: { rank: 'asc' },
       });
     }
@@ -253,15 +254,17 @@ export class LeaderboardService {
 
   async getWeeklyRanking(date = new Date(), modeId?: number) {
     const wk = startOfWeek(date);
+    const scopeKey = `WEEKLY:${ymdLocal(wk)}${modeId ? `:m=${modeId}` : ''}`;
+
     let entries = await this.prisma.leaderboardEntry.findMany({
-      where: { period: 'WEEKLY', weekStart: wk, modeConfigId: modeId ?? null },
+      where: { period: 'WEEKLY', scopeKey },
       orderBy: { rank: 'asc' },
     });
 
     if (entries.length === 0) {
       await this.buildWeeklySnapshot(date, modeId);
       entries = await this.prisma.leaderboardEntry.findMany({
-        where: { period: 'WEEKLY', weekStart: wk, modeConfigId: modeId ?? null },
+        where: { period: 'WEEKLY', scopeKey },
         orderBy: { rank: 'asc' },
       });
     }
@@ -286,15 +289,17 @@ export class LeaderboardService {
   }
 
   async getLifetimeRanking(modeId?: number) {
+    const scopeKey = `ALL_TIME${modeId ? `:m=${modeId}` : ''}`;
+
     let entries = await this.prisma.leaderboardEntry.findMany({
-      where: { period: 'ALL_TIME', date: null, weekStart: null, modeConfigId: modeId ?? null },
+      where: { period: 'ALL_TIME', scopeKey },
       orderBy: { rank: 'asc' },
     });
 
     if (entries.length === 0) {
       await this.buildAllTimeSnapshot(modeId);
       entries = await this.prisma.leaderboardEntry.findMany({
-        where: { period: 'ALL_TIME', date: null, weekStart: null, modeConfigId: modeId ?? null },
+        where: { period: 'ALL_TIME', scopeKey },
         orderBy: { rank: 'asc' },
       });
     }
