@@ -1,12 +1,5 @@
 import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  Param,
-  ParseIntPipe,
-  Headers,
-  BadRequestException,
+  Controller, Post, Get, Body, Param, ParseIntPipe, Headers, BadRequestException, ParseUUIDPipe,
 } from '@nestjs/common';
 import { PlaysService } from './plays.service';
 import { StartPlayDto } from './dto/start-play.dto';
@@ -19,12 +12,17 @@ export class PlaysController {
   @Post('start')
   async start(
     @Body() dto: StartPlayDto,
-    @Headers('x-guest-id') guestId?: string,
+    @Headers('x-guest-id') guestId: string,
   ) {
     if (!dto?.modeConfigId || Number.isNaN(+dto.modeConfigId)) {
       throw new BadRequestException('modeConfigId é obrigatório e deve ser número');
     }
-    return this.playsService.startPlayAsGuest(dto.modeConfigId, dto.date, guestId);
+    const parsedGuestId = await new ParseUUIDPipe({ version: '4' }).transform(
+      guestId,
+      { type: 'custom', metatype: String as any, data: 'x-guest-id' },
+    );
+
+    return this.playsService.startPlayAsGuest(dto.modeConfigId, dto.date, parsedGuestId);
   }
 
   @Get('progress/:modeConfigId')
@@ -42,9 +40,7 @@ export class PlaysController {
     @Body() dto: GuessDto,
     @Headers('x-guest-id') guestId?: string,
   ) {
-    if (!guestId) {
-      throw new BadRequestException('X-Guest-Id é obrigatório para chutar.');
-    }
+    if (!guestId) throw new BadRequestException('X-Guest-Id é obrigatório para chutar.');
     return this.playsService.makeGuestGuess(playId, dto.guess, guestId);
   }
 
@@ -53,9 +49,7 @@ export class PlaysController {
     @Param('playId', ParseIntPipe) playId: number,
     @Headers('x-guest-id') guestId?: string,
   ) {
-    if (!guestId) {
-      throw new BadRequestException('X-Guest-Id é obrigatório.');
-    }
+    if (!guestId) throw new BadRequestException('X-Guest-Id é obrigatório.');
     return this.playsService.getGuestAttemptsByPlay(playId, guestId);
   }
 
@@ -64,9 +58,7 @@ export class PlaysController {
     @Param('playId', ParseIntPipe) playId: number,
     @Headers('x-guest-id') guestId?: string,
   ) {
-    if (!guestId) {
-      throw new BadRequestException('X-Guest-Id é obrigatório.');
-    }
+    if (!guestId) throw new BadRequestException('X-Guest-Id é obrigatório.');
     return this.playsService.getGuestProgressByPlayId(playId, guestId);
   }
 }

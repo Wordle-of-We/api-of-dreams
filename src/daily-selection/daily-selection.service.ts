@@ -17,7 +17,6 @@ export class DailySelectionService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Chave YYYY-MM-DD calculada em America/Fortaleza */
   private dayKeyFortaleza(d: Date): string {
     return new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/Fortaleza',

@@ -4,13 +4,13 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-  import { PrismaService } from '../../prisma/prisma.service';
-import { v4 as uuidv4 } from 'uuid';
+import { PrismaService } from '../../prisma/prisma.service';
 import { StatsSnapshotService } from '../stats/stats-snapshot.service';
 import {
   fortalezaDayStart,
   fortalezaDayStartFromYYYYMMDD,
 } from '../../utils/dayStart';
+import { Prisma } from '@prisma/client';
 
 export interface Comparison<T> {
   guessed: T;
@@ -32,9 +32,8 @@ export class PlaysService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly statsSnapshot: StatsSnapshotService,
-  ) {}
+  ) { }
 
-  /** Sempre retorna o início do dia em Fortaleza */
   private getDayStart(date?: string): Date {
     return date ? fortalezaDayStartFromYYYYMMDD(date) : fortalezaDayStart();
   }
@@ -87,24 +86,16 @@ export class PlaysService {
     }
   }
 
-  /** Inicia (ou reutiliza) partida apenas por guestId */
   async startPlayAsGuest(modeConfigId: number, date?: string, guestId?: string) {
     if (!modeConfigId || Number.isNaN(+modeConfigId)) {
       throw new BadRequestException('modeConfigId inválido');
     }
-    const dayStart = this.getDayStart(date);
-    const finalGuestId = guestId || uuidv4();
-
-    // Reusa a mesma play do dia para o convidado
-    const existing = await this.prisma.play.findFirst({
-      where: { guestId: finalGuestId, modeConfigId, selectionDate: dayStart },
-      include: { character: true, modeConfig: true },
-    });
-    if (existing) {
-      return { ...this.toStartResponse(existing), guestId: finalGuestId };
+    if (!guestId) {
+      throw new BadRequestException('X-Guest-Id é obrigatório');
     }
 
-    // Seleção do dia
+    const dayStart = this.getDayStart(date);
+
     const sel = await this.prisma.dailySelection.findFirst({
       where: { modeConfigId, date: dayStart, latest: true },
       orderBy: { id: 'desc' },
@@ -112,22 +103,30 @@ export class PlaysService {
     });
     if (!sel) throw new NotFoundException('Nenhum personagem selecionado neste dia');
 
-    const play = await this.prisma.play.create({
-      data: {
-        guestId: finalGuestId,
+    const play = await this.prisma.play.upsert({
+      where: {
+        guestId_modeConfigId_selectionDate_characterId: {
+          guestId,
+          modeConfigId,
+          selectionDate: dayStart,
+          characterId: sel.characterId,
+        },
+      },
+      create: {
+        guestId,
         modeConfigId,
         characterId: sel.characterId,
         selectionDate: dayStart,
       },
+      update: {},
       include: { character: true, modeConfig: true },
     });
 
-    try { await this.statsSnapshot.syncDay(); } catch {}
+    try { await this.statsSnapshot.syncDay(); } catch { }
 
-    return { ...this.toStartResponse(play), guestId: finalGuestId };
+    return { ...this.toStartResponse(play), guestId };
   }
 
-  /** Chute de convidado (valida dono pelo guestId) */
   async makeGuestGuess(
     playId: number,
     guess: string,
@@ -153,7 +152,7 @@ export class PlaysService {
     if (!trimmed) throw new BadRequestException('Informe um personagem.');
 
     const already = await this.prisma.attempt.findFirst({
-      where: { guestId, modeConfigId: play.modeConfigId, playId, guess: trimmed },
+      where: { playId, guess: trimmed }, // <- alinha com UNIQUE (playId, guess)
     });
     if (already) throw new BadRequestException('Você já chutou esse personagem nesta partida');
 
@@ -163,47 +162,59 @@ export class PlaysService {
     });
     if (!guessed) throw new NotFoundException(`Personagem "${guess}" não encontrado`);
 
-    const prevCount = await this.prisma.attempt.count({ where: { guestId, playId } });
     const isCorrect = guessed.id === target.id;
 
-    const attempt = await this.prisma.attempt.create({
-      data: {
-        guestId,
-        targetCharacterId: target.id,
-        guessedCharacterId: guessed.id,
-        modeConfigId: play.modeConfigId,
-        guess: trimmed,
+    try {
+      const result = await this.prisma.$transaction(async (tx) => {
+        const updated = await tx.play.update({
+          where: { id: playId },
+          data: {
+            attemptsCount: { increment: 1 },
+            ...(isCorrect ? { completed: true, completedAt: new Date() } : {}),
+          },
+          select: { attemptsCount: true },
+        });
+
+        const attempt = await tx.attempt.create({
+          data: {
+            guestId,
+            targetCharacterId: target.id,
+            guessedCharacterId: guessed.id,
+            modeConfigId: play.modeConfigId,
+            guess: trimmed,
+            isCorrect,
+            playId,
+            order: updated.attemptsCount,
+          },
+        });
+
+        return attempt;
+      });
+
+      try { await this.statsSnapshot.syncDay(); } catch { }
+
+      const comparison = this.buildComparison(mode, guessed, target);
+
+      return {
+        attemptNumber: result.order,
+        guess: result.guess,
         isCorrect,
-        playId,
-        order: prevCount + 1,
-      },
-    });
-
-    await this.prisma.play.update({
-      where: { id: playId },
-      data: {
-        attemptsCount: { increment: 1 },
-        ...(isCorrect ? { completed: true, completedAt: new Date() } : {}),
-      },
-    });
-
-    try { await this.statsSnapshot.syncDay(); } catch {}
-
-    const comparison = this.buildComparison(mode, guessed, target);
-
-    return {
-      attemptNumber: prevCount + 1,
-      guess: attempt.guess,
-      isCorrect,
-      playCompleted: isCorrect,
-      guessedImageUrl1:
-        mode === 'Imagem' ? (guessed.imageUrl2 ?? null) : (guessed.imageUrl1 ?? null),
-      comparison,
-      triedAt: attempt.createdAt,
-    };
+        playCompleted: isCorrect,
+        guessedImageUrl1:
+          mode === 'Imagem' ? (guessed.imageUrl2 ?? null) : (guessed.imageUrl1 ?? null),
+        comparison,
+        triedAt: result.createdAt,
+      };
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+        return Promise.reject(
+          new BadRequestException('Você já chutou esse personagem nesta partida')
+        );
+      }
+      throw e;
+    }
   }
 
-  /** Progresso diário do convidado (por guestId) */
   async getDailyProgressAsGuest(modeConfigId: number, guestId: string) {
     const today = this.getDayStart();
 
@@ -271,7 +282,6 @@ export class PlaysService {
     };
   }
 
-  /** Progresso por playId (guest) */
   async getGuestProgressByPlayId(playId: number, guestId: string) {
     const play = await this.prisma.play.findUnique({
       where: { id: playId },
@@ -328,7 +338,6 @@ export class PlaysService {
     };
   }
 
-  /** Somente attempts (guest) */
   async getGuestAttemptsByPlay(playId: number, guestId: string) {
     const progress = await this.getGuestProgressByPlayId(playId, guestId);
     return progress.attempts;

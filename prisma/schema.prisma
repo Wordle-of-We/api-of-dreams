@@ -120,7 +120,6 @@ model Play {
   attemptsCount Int      @default(0)
   completed     Boolean  @default(false)
   createdAt     DateTime @default(now())
-
   completedAt   DateTime?
   selectionDate DateTime
 
@@ -131,31 +130,33 @@ model Play {
 
   @@index([modeConfigId, selectionDate])
   @@index([userId, modeConfigId, selectionDate])
+  @@index([guestId, modeConfigId, selectionDate])
 
-  @@unique([userId, modeConfigId, selectionDate], map: "user_day_mode_unique")
-
-  @@unique([guestId, modeConfigId, selectionDate], map: "guest_day_mode_unique")
+  @@unique([userId,  modeConfigId, selectionDate, characterId],  map: "uniq_user_mode_day_char")
+  @@unique([guestId, modeConfigId, selectionDate, characterId],  map: "uniq_guest_mode_day_char")
 }
 
 model Attempt {
   id                 Int      @id @default(autoincrement())
-  attemptNumber      Int      @default(0)
   userId             Int?
   guestId            String?
   targetCharacterId  Int
   guessedCharacterId Int?
   modeConfigId       Int
   guess              String
-  order              Int?
-  isCorrect          Boolean  @default(false)
-  createdAt          DateTime @default(now())
+  order              Int
+  isCorrect          Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  playId             Int
 
   user             User?      @relation(fields: [userId], references: [id])
   targetCharacter  Character  @relation("target", fields: [targetCharacterId], references: [id])
   guessedCharacter Character? @relation("guessed", fields: [guessedCharacterId], references: [id])
   modeConfig       ModeConfig @relation(fields: [modeConfigId], references: [id])
-  play             Play?      @relation(fields: [playId], references: [id])
-  playId           Int?
+  play             Play       @relation(fields: [playId], references: [id])
+
+  @@unique([playId, guess], map: "uniq_guess_per_play")
+  @@index([playId, createdAt])
 }
 
 model DailySelection {
